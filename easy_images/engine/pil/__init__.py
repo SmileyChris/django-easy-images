@@ -1,7 +1,7 @@
 from easy_images.engine.base import BaseEngine
 from easy_images.engine.queue.easy_images_db_queue import (
     DBQueue,
-    DBCachedQueue,
+    CachedDBQueue,
 )
 
 from .generator import PILGenerator
@@ -15,5 +15,5 @@ class DBQueueEngine(DBQueue, Engine):
     pass
 
 
-class DBCachedQueueEngine(DBCachedQueue, Engine):
+class CachedDBQueueEngine(CachedDBQueue, Engine):
     pass

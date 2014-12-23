@@ -15,8 +15,6 @@ An action looks like this::
 """
 from django.core.files import File
 
-from .default import default_storage
-
 
 class BaseEngine(object):
 
@@ -88,7 +86,8 @@ class BaseEngine(object):
         return django.core.files.storage.default_storage
 
     def get_generated_storage(self, opts):
-        return default_storage
+        import easy_images.engine.default
+        return easy_images.engine.default.default_storage
 
     def save(self, path, obj):
         """

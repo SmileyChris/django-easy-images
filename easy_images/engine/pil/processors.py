@@ -9,7 +9,7 @@ except ImportError:
     import ImageChops
     import ImageFilter
 
-from easy_thumbnails import utils
+from . import utils
 
 
 def _compare_entropy(start_slice, end_slice, slice, difference):

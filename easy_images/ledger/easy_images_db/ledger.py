@@ -61,7 +61,7 @@ class DBLedger(BaseLedger):
         return image
 
 
-class DBCachedLedger(DBLedger):
+class CachedDBLedger(DBLedger):
 
     def meta(self, source_path, opts, **kwargs):
         image_hash = self.hash(source_path, opts)
@@ -69,7 +69,7 @@ class DBCachedLedger(DBLedger):
         if meta is not None:
             return meta
         kwargs['image_hash'] = image_hash
-        meta = super(DBCachedLedger, self).meta(source_path, opts, **kwargs)
+        meta = super(CachedDBLedger, self).meta(source_path, opts, **kwargs)
         image_cache.set(image_hash, json.dumps(meta), timeout=None)
         return meta
 
@@ -93,7 +93,7 @@ class DBCachedLedger(DBLedger):
                 hashes.remove(key)
         kwargs['hashes'] = hashes
         kwargs['json_dict'] = json_dict
-        meta_list = super(DBCachedLedger, self).meta_list(sources, **kwargs)
+        meta_list = super(CachedDBLedger, self).meta_list(sources, **kwargs)
         # Add items found in DB into the cache.
         meta_not_cached = {}
         for key in add_to_cache:
@@ -109,4 +109,4 @@ class DBCachedLedger(DBLedger):
         meta = self.build_meta(**kwargs)
         image_cache.set(image_hash, json.dumps(meta), timeout=None)
         kwargs['meta'] = meta
-        return super(DBCachedLedger, self).save(source_path, opts, **kwargs)
+        return super(CachedDBLedger, self).save(source_path, opts, **kwargs)

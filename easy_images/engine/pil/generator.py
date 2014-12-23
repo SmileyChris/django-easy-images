@@ -1,10 +1,10 @@
 import PIL
 from easy_images.engine.pil import processors
 
-from .output import PILOutput
+from . import output, utils
 
 
-class PILGenerator(PILOutput):
+class PILGenerator(output.PILOutput):
     """
     Easy Images engine mixin to generate images.
     """
@@ -15,6 +15,7 @@ class PILGenerator(PILOutput):
         processors.filters,
         processors.background,
     )
+    exif_orientation = True
 
     def get_processors(self):
         return self.default_processors
@@ -47,4 +48,8 @@ class PILGenerator(PILOutput):
             pass
         # Try a second time to catch any other potential exceptions.
         image.load()
+
+        if self.exif_orientation:
+            image = utils.exif_orientation(image)
+
         return image

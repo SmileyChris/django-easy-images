@@ -4,7 +4,7 @@ import json
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
-from easy_images.engine import queue
+from easy_images.engine.queue.base import PRIORITY_NORMAL
 
 from . import managers
 
@@ -18,7 +18,7 @@ class Processing(models.Model):
     time = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        ordering = ('time')
+        ordering = ('time',)
 
     def __str__(self):
         return self.key
@@ -31,7 +31,7 @@ class Action(models.Model):
     """
     action = models.TextField()
     time = models.DateTimeField(default=timezone.now)
-    priority = models.SmallPositiveIntegerField(default=queue.PRIORITY_NORMAL)
+    priority = models.PositiveSmallIntegerField(default=PRIORITY_NORMAL)
 
     objects = managers.ActionManager()
 
