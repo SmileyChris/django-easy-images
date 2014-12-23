@@ -29,29 +29,7 @@ class EasyImage(object):
         """
         A hash representing this combination of source image and options.
         """
-        self.ledger.hash(self.source_path, self.opts)
-
-    @property
-    def url(self):
-        """
-        The url if the image if it exists (or is generated in-process as part
-        of this call) otherwise the "processing" url.
-
-        Check if the image doesn't exist yet (and isn't currently being
-        processed) an action to generate it is added to the engine.
-        """
-        processing = not self.generate()
-        url = self.build_url()
-        if processing:
-            return self.engine.processing_url(
-                source=self.source_path, opts=self.opts, url=url)
-        return url
-
-    def build_url(self):
-        """
-        Build the URL without checking existance.
-        """
-        return self.engine.get_generated_storage(self.opts).url(self.name)
+        return self.ledger.hash(self.source_path, self.opts)
 
     @property
     def processing(self):
@@ -74,6 +52,28 @@ class EasyImage(object):
         """
         return not self.processing and self.meta is not None
 
+    def build_url(self):
+        """
+        Build the URL without checking existance.
+        """
+        return self.engine.get_generated_storage(self.opts).url(self.name)
+
+    @property
+    def url(self):
+        """
+        The url if the image if it exists (or is generated in-process as part
+        of this call) otherwise the "processing" url.
+
+        Check if the image doesn't exist yet (and isn't currently being
+        processed) an action to generate it is added to the engine.
+        """
+        processing = not self.generate()
+        url = self.build_url()
+        if processing:
+            return self.engine.processing_url(
+                source=self.source_path, opts=self.opts, source_url=url)
+        return url
+
     @property
     def meta(self):
         """
@@ -84,15 +84,15 @@ class EasyImage(object):
 
         :rtype: dict, NoneType
         """
-        meta = getattr(self, '_meta', None)
         if self.processing:
-            if meta is not None:
+            try:
                 del self._meta
+            except AttributeError:
+                pass
             return None
-        if meta is None:
-            meta = self.ledger.meta(opts=self.opts)
-            self._meta = meta
-        return meta
+        if not hasattr(self, '_meta'):
+            self._meta = self.ledger.meta(opts=self.opts)
+        return self._meta
 
     @meta.setter
     def meta(self, value):
@@ -113,7 +113,7 @@ class EasyImage(object):
     def get_file(self):
         if not self.exists:
             return None
-        return self.engine.get_generated(source=self.source, opts=self.opts)
+        return self.engine.get_generated(source=self.name, opts=self.opts)
 
     @property
     def source_path(self):
@@ -127,17 +127,19 @@ class EasyImage(object):
         Generate the image.
 
         :param force: Force the generation, even if the image exists already.
-        :returns: The image, if generated in-process.
+        :returns: The image if generated in-process, or ``True`` if the image
+            already exists.
         """
-        if force or not self.exists:
-            if 'KEY' in self.opts:
-                opts = self.opts
-            else:
-                opts = {'KEY': self.hash}
-                opts.update(self.opts)
-            action = {
-                'source': self.source_path, 'all_opts': {self.name: opts}}
-            return self.engine.add(action)
+        if not force and self.exists:
+            return True
+        if 'KEY' in self.opts:
+            opts = self.opts
+        else:
+            opts = {'KEY': self.hash}
+            opts.update(self.opts)
+        action = {
+            'source': self.source_path, 'all_opts': {self.name: opts}}
+        return self.engine.add(action)
 
 
 class EasyImageBatch(object):
