@@ -56,11 +56,11 @@ class BaseEngine(object):
             processing.append(self.processing(key))
         return processing
 
-    def processing_url(self, source_path, opts, url, **kwargs):
+    def processing_url(self, source_path, opts, source_url, **kwargs):
         """
         URL to return for an image which is currently being processed.
         """
-        return ''
+        raise NotImplementedError()
 
     def get_source(self, source, opts):
         """
@@ -72,7 +72,7 @@ class BaseEngine(object):
             # Quacks like a file-like object, use it directly.
             return source
         storage = self.get_source_storage(opts)
-        storage.open(source)
+        return storage.open(source)
 
     def get_generated(self, source, opts):
         """
