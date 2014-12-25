@@ -120,7 +120,8 @@ def autocrop(im, autocrop=False, **kwargs):
 
 
 def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
-                   upscale=False, zoom=None, target=None, **kwargs):
+                   upscale=False, zoom=None, target=None, highres=False,
+                   **kwargs):
     """
     Handle scaling and cropping the source image.
 
@@ -165,6 +166,9 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
         from the left and top of the image, respectively. If the image needs to
         be cropped, it will trim off the right and bottom edges until the focal
         point is centered.
+
+    highres=int
+        Multiply the target resolution by this.
     """
     size = crop or fit or fill
     if not size:
@@ -172,6 +176,9 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
 
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [int(v) for v in size]
+    if highres:
+        target_x *= highres
+        target_y *= highres
 
     if crop or fill or not target_x or not target_y:
         scale = max(target_x / source_x, target_y / source_y)

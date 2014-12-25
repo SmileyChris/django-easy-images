@@ -99,10 +99,17 @@ class FilenameInfo(object):
     def ext(self):
         """
         The file extension of the processed image (including the '.').
+
+        If the ``highres`` option is set, this will be prefixed with
+        :attr:`~easy_images.ledger.base.Ledger.highres_infix`.
         """
         if not hasattr(self, '_cached_ext'):
             self._cached_ext = self._ledger.output_extension(
                 opts=self._opts, source_ext=self.source_ext, **self._kwargs)
+            highres = self._opts.get('highres')
+            if highres:
+                infix = self._ledger.highres_infix.format(highres=highres)
+                self._cached_ext = infix + self._cached_ext
         return self._cached_ext
 
     @property

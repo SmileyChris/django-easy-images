@@ -1,24 +1,7 @@
 #!/usr/bin/env python
 from __future__ import unicode_literals
 import codecs
-import os
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-
-
-class DjangoTests(TestCommand):
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        from django.core import management
-        DSM = 'DJANGO_SETTINGS_MODULE'
-        if DSM not in os.environ:
-            os.environ[DSM] = 'easy_images.tests.settings'
-        management.execute_from_command_line()
 
 
 def read_files(*filenames):
@@ -46,10 +29,13 @@ setup(
     platforms=['any'],
     packages=find_packages(),
     include_package_data=True,
-    cmdclass={'test': DjangoTests},
     install_requires=[
         'django>=1.6',
     ],
+    tests_require=(
+        'django-setuptest',
+    ),
+    test_suite='setuptest.setuptest.SetupTestSuite',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',

@@ -12,6 +12,14 @@ class BaseLedger(object):
     See the :cls:`~easy_images.ledger.filename_info.FilenameInfo` class for the
     available properties.
     """
+    highres_infix = '_{highres}x'
+    """
+    The infix used to distinguish images generated for high resolution
+    displays.
+
+    It is added to the filename just just before the '.' of the extension for
+    images generated with the ``highres`` option.
+    """
 
     def exists(self, source_path, opts, **kwargs):
         """
