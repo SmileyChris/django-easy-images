@@ -7,11 +7,13 @@ from easy_images.ledger.default import default_ledger
 @python_2_unicode_compatible
 class EasyImage(object):
 
-    def __init__(self, source, opts, ledger=None, engine=None):
+    def __init__(self, source, opts, ledger=None, engine=None,
+                 always_check_processing=True):
         self.source = source
         self.opts = opts
         self.ledger = ledger or default_ledger
         self.engine = engine or default_engine
+        self.always_check_processing = always_check_processing
 
     def __str__(self):
         return self.url
@@ -50,7 +52,14 @@ class EasyImage(object):
 
         :rtype: boolean
         """
-        return not self.processing and self.meta is not None
+        if self.always_check_processing or not hasattr(self, '_meta'):
+            if self.processing:
+                try:
+                    del self.meta
+                except AttributeError:
+                    pass
+                return False
+        return self.meta is not None
 
     def build_url(self):
         """
@@ -77,26 +86,22 @@ class EasyImage(object):
     @property
     def meta(self):
         """
-        Any meta-data for this image
-
-        If the image is being generated, it is considered to *not* exist, and
-        therefore.
+        Any meta-data for this image.
 
         :rtype: dict, NoneType
         """
-        if self.processing:
-            try:
-                del self._meta
-            except AttributeError:
-                pass
-            return None
         if not hasattr(self, '_meta'):
-            self._meta = self.ledger.meta(opts=self.opts)
+            self._meta = self.ledger.meta(
+                source_path=self.source_path, opts=self.opts)
         return self._meta
 
     @meta.setter
     def meta(self, value):
         self._meta = value
+
+    @meta.deleter
+    def meta(self):
+        del self._meta
 
     @property
     def width(self):
@@ -111,6 +116,7 @@ class EasyImage(object):
             return size[1]
 
     def get_file(self):
+        # import ipdb; ipdb.set_trace()
         if not self.exists:
             return None
         return self.engine.get_generated(source=self.name, opts=self.opts)
@@ -146,6 +152,10 @@ class EasyImageBatch(object):
     """
     Interact with a ledger to more efficiently load multiple images in a single
     batch.
+
+    Images loaded as part of a batch that aren't being generated will assume
+    they are always available from that point on to avoid excessive "in
+    generation" queries when iterating.
     """
 
     def __init__(self, sources=None, ledger=None, engine=None):
@@ -167,7 +177,9 @@ class EasyImageBatch(object):
         """
         Add image options to a batch that will be loaded in a single call.
         """
-        image = EasyImage(source, opts, ledger=self.ledger, engine=self.engine)
+        image = EasyImage(
+            source, opts, ledger=self.ledger, engine=self.engine,
+            always_check_processing=False)
         self.new_images.append(image)
         return image
 
