@@ -13,7 +13,7 @@ from django.core.cache.backends.base import InvalidCacheBackendError
 try:
     from django.core.cache import caches
     get_cache = lambda cache_name: caches[cache_name]
-except ImportError:  # Django <= 1.6
+except ImportError:  # pragma: no cover  (Django <= 1.6)
     from django.core.cache import get_cache
 try:
     image_cache = get_cache('easy_images')

@@ -22,14 +22,14 @@ class EasyImage(object):
         The filename for this image.
         """
         return self.ledger.build_filename(
-            source=self.source_path, opts=self.opts)
+            source_path=self.source_path, opts=self.opts)
 
     @property
     def hash(self):
         """
         A hash representing this combination of source image and options.
         """
-        return self.ledger.hash(self.source_path, self.opts)
+        return self.ledger.hash(source_path=self.source_path, opts=self.opts)
 
     @property
     def processing(self):
@@ -159,7 +159,7 @@ class EasyImageBatch(object):
         self.loaded_images = []
         self.new_images = []
         self.ledger = ledger or default_ledger
-        self.engine = engine
+        self.engine = engine or default_engine
         for source, opts in sources or ():
             self.add(source, opts)
 
@@ -183,15 +183,19 @@ class EasyImageBatch(object):
             # Exclude self.engine.processing_list items from meta_list.
             processing_list = self.engine.processing_list(
                 image.hash for image in loading_images)
-            sources = (
-                (image.source, image.opts)
-                for image, processing in zip(loading_images, processing_list)
-                if not processing)
-            meta_list = self.ledger.meta_list(sources)
-            for image, meta in zip(loading_images, meta_list):
-                image.meta = meta
-                self.loaded_images.append(image)
+            meta_sources = []
+            meta_images = []
+            for image, processing in zip(loading_images, processing_list):
+                if not processing:
+                    meta_sources.append((image.source, image.opts))
+                    meta_images.append(image)
+            if meta_sources:
+                meta_list = self.ledger.meta_list(meta_sources)
+                for image, meta in zip(meta_images, meta_list):
+                    image.meta = meta
+            for image in loading_images:
                 yield image
+                self.loaded_images.append(image)
 
     def load(self):
         """

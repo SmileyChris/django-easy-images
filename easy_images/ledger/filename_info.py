@@ -12,9 +12,9 @@ class FilenameInfo(object):
         self._ledger = ledger
         self._kwargs = kwargs
 
-    def make_hash(self, *text_parts):
+    def make_hash(self, text):
         return base64.urlsafe_b64encode(
-            hashlib.sha1(':'.join(text_parts)).digest()).rstrip('=')
+            hashlib.sha1(text).digest()).rstrip('=')
 
     @property
     def src_dir(self):
@@ -46,7 +46,7 @@ class FilenameInfo(object):
         """
         if not hasattr(self, '_cached_opts'):
             parts = []
-            for key, value in self._opts.items():
+            for key, value in sorted(self._opts.items()):
                 if key == key.upper() or value is False or value is None:
                     continue
                 if value is True:
@@ -79,7 +79,8 @@ class FilenameInfo(object):
         A 28 character url-safe base64 hash of the source image directory, name
         and options combined (source path and options combined with a ``':'``).
         """
-        return self.make_hash(self._source_path, self.opts_text)
+        return self.make_hash('{0}:{1}'.format(
+            self._source_path, self.opts))
 
     @property
     def src_name(self):
@@ -105,7 +106,7 @@ class FilenameInfo(object):
         """
         if not hasattr(self, '_cached_ext'):
             self._cached_ext = self._ledger.output_extension(
-                opts=self._opts, source_ext=self.source_ext, **self._kwargs)
+                opts=self._opts, source_ext=self.src_ext, **self._kwargs)
             highres = self._opts.get('highres')
             if highres:
                 infix = self._ledger.highres_infix.format(highres=highres)
