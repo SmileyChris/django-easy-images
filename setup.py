@@ -33,9 +33,9 @@ setup(
         'django>=1.6',
     ],
     tests_require=(
-        'django-setuptest',
+        'coverage',
     ),
-    test_suite='setuptest.setuptest.SetupTestSuite',
+    test_suite='runtests.runtests',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
