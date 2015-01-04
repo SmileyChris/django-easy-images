@@ -116,10 +116,10 @@ class EasyImage(object):
             return size[1]
 
     def get_file(self):
-        # import ipdb; ipdb.set_trace()
         if not self.exists:
             return None
-        return self.engine.get_generated(source=self.name, opts=self.opts)
+        return self.engine.get_generated(
+            source_path=self.source_path, opts=self.opts)
 
     @property
     def source_path(self):

@@ -15,6 +15,8 @@ An action looks like this::
 """
 from django.core.files import File
 
+from easy_images.ledger.default import default_ledger, import_string
+
 
 class BaseEngine(object):
 
@@ -24,13 +26,30 @@ class BaseEngine(object):
 
         If the image is generated in-process, it should be returned.
         """
-        return self.generate(action)
+        return self.generate_and_record(action)
 
     def generate(self, action):
         """
         Generate image(s).
         """
         raise NotImplementedError()
+
+    def generate_and_record(self, action):
+        self.generate(action)
+        source_path = action['source']
+        for opts in action['all_opts'].values():
+            self.record(source_path, opts)
+
+    def record(self, source_path, opts):
+        key = opts.get('KEY')
+        if not key:
+            return
+        ledger = opts.get('LEDGER')
+        if ledger:
+            ledger = import_string(ledger)()
+        else:
+            ledger = default_ledger
+        return ledger.save(source_path, opts)
 
     def processing(self, key, **kwargs):
         """
@@ -74,12 +93,12 @@ class BaseEngine(object):
         storage = self.get_source_storage(opts)
         return storage.open(source)
 
-    def get_generated(self, source, opts):
+    def get_generated(self, source_path, opts):
         """
         Get the generated file.
         """
         storage = self.get_generated_storage(opts)
-        return storage.open(source)
+        return storage.open(source_path)
 
     def get_source_storage(self, opts):
         import django.core.files.storage
