@@ -19,12 +19,13 @@ class AppSettings(object):
             'TASTE': 'sweet',
         }
 
-    The whole dictionary can be retrieved, or individual attributes::
+    Individual attributes can be retrieved, or entire underscored
+    dictionaries::
 
         from myapp.conf import settings
-        print("Smells like {0}".format(settings.MYAPP__SCENT))
+        print("Tastes {0}".format(settings.MYAPP__TASTE))
         myapp_settings = settings.MYAPP
-        print("Tastes like {0}".format(myapp_settings['TASTE']))
+        print("Smells like {0}".format(myapp_settings['SCENT']))
     """
 
     def __getattribute__(self, attr):
