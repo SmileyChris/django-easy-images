@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
-from cStringIO import StringIO
+try:
+    from io import BytesIO
+except ImportError:
+    try:
+        from cStringIO import StringIO as BytesIO
+    except ImportError:
+        from StringIO import StringIO as BytesIO
 
 from coverage import coverage, misc
 from distutils import log
@@ -37,7 +43,7 @@ def coverage_report(cov, report):
         if report:
             log.info("\nCoverage Report (showing uncovered modules):")
             real_stdout = sys.stdout
-            fake_stdout = StringIO()
+            fake_stdout = BytesIO()
             sys.stdout = fake_stdout
             try:
                 cov.report(include=include, omit=omit)
