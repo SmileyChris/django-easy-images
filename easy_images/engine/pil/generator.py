@@ -11,7 +11,7 @@ class PILGenerator(output.PILOutput):
     default_processors = (
         processors.colorspace,
         processors.autocrop,
-        processors.scale_and_crop,
+        processors.resize,
         processors.filters,
         processors.background,
     )

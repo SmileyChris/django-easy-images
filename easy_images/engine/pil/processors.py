@@ -2,12 +2,7 @@ import itertools
 import re
 
 from django.utils import six
-try:
-    from PIL import Image, ImageChops, ImageFilter
-except ImportError:
-    import Image
-    import ImageChops
-    import ImageFilter
+from PIL import Image, ImageChops, ImageFilter
 
 from . import utils
 
@@ -17,7 +12,6 @@ def _compare_entropy(start_slice, end_slice, slice, difference):
     Calculate the entropy of two slices (from the start and end of an axis),
     returning a tuple containing the amount that should be added to the start
     and removed from the end of the axis.
-
     """
     start_entropy = utils.image_entropy(start_slice)
     end_entropy = utils.image_entropy(end_slice)
@@ -49,8 +43,8 @@ def colorspace(im, bw=False, replace_alpha=False, **kwargs):
     A passive option (i.e. always processed) of this method is that all images
     (unless grayscale) are converted to RGB colorspace.
 
-    This processor should be listed before :func:`scale_and_crop` so palette is
-    changed before the image is resized.
+    This processor should be listed before :func:`resize` so palette is changed
+    before the image is resized.
 
     bw
         Make the thumbnail grayscale (not really just black & white).
@@ -94,8 +88,8 @@ def autocrop(im, autocrop=False, **kwargs):
     """
     Remove any unnecessary whitespace from the edges of the source image.
 
-    This processor should be listed before :func:`scale_and_crop` so the
-    whitespace is removed from the source image before it is resized.
+    This processor should be listed before :func:`resize` so the whitespace is
+    removed from the source image before any resize takes place.
 
     autocrop
         Activates the autocrop method for this image.
@@ -110,7 +104,6 @@ def autocrop(im, autocrop=False, **kwargs):
             no_alpha = im.convert('L')
         # Convert to black and white image.
         bw = no_alpha.convert('L')
-        # bw = bw.filter(ImageFilter.MedianFilter)
         # White background.
         bg = Image.new('L', im.size, 255)
         bbox = ImageChops.difference(bw, bg).getbbox()
@@ -119,13 +112,12 @@ def autocrop(im, autocrop=False, **kwargs):
     return im
 
 
-def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
-                   upscale=False, zoom=None, target=None, highres=False,
-                   **kwargs):
+def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
+           zoom=None, target=None, HIGHRES=None, **kwargs):
     """
-    Handle scaling and cropping the source image.
+    Handle resizing of the source image.
 
-    Images can be scaled / cropped against a single dimension by using zero
+    Images can be fit / cropped against a single dimension by using zero
     as the placeholder in the size. For example, ``size=(100, 0)`` will cause
     the image to be resized to 100 pixels wide, keeping the aspect ratio of
     the source image.
@@ -143,18 +135,14 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
         both axis.
 
     smart_crop
-        Use with ``crop``. The image will be incrementally cropped down to the
+        Use with ``crop`` incrementally crop the source image down to the
         requested size by removing slices from edges with the least entropy.
 
-        Finally, you can use ``crop="scale"`` to simply scale the image so that
-        at least one dimension fits within the size dimensions given (you may
-        want to use the upscale option too).
-
     upscale
-        Allow upscaling of the source image during scaling.
+        Allow upscaling of the source image during resizing.
 
     zoom=int
-        A percentage to zoom in on the scaled image. For example, a zoom of
+        A percentage to zoom in on the resized image. For example, a zoom of
         ``40`` will clip 20% off each side of the source image before
         thumbnailing.
 
@@ -167,7 +155,7 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
         be cropped, it will trim off the right and bottom edges until the focal
         point is centered.
 
-    highres=int
+    HIGHRES=int
         Multiply the target resolution by this.
     """
     size = crop or fit or fill
@@ -176,9 +164,9 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
 
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [int(v) for v in size]
-    if highres:
-        target_x *= highres
-        target_y *= highres
+    if HIGHRES:
+        target_x = target * HIGHRES
+        target_y = target * HIGHRES
 
     if crop or fill or not target_x or not target_y:
         scale = max(target_x / source_x, target_y / source_y)
@@ -187,16 +175,19 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
 
     # Handle one-dimensional targets.
     if not target_x:
-        target_x = round(source_x * scale)
-    elif not target_y:
-        target_y = round(source_y * scale)
+        target_x = source_x * scale
+    if not target_y:
+        target_y = source_y * scale
 
     if zoom:
         if not crop:
-            target_x = round(source_x * scale)
-            target_y = round(source_y * scale)
+            target_x = source_x * scale
+            target_y = source_y * scale
             crop = True
         scale *= (100 + int(zoom)) / 100.0
+
+    target_x = int(round(target_x))
+    target_y = int(round(target_y))
 
     if scale < 1.0 or (scale > 1.0 and upscale):
         # Resize the image to the target size boundary. Round the scaled
@@ -228,8 +219,8 @@ def scale_and_crop(im, fit=None, crop=None, fill=None, smart_crop=False,
                 max(0, min(source_x - target_x, focal_point_x - halftarget_x)),
                 max(0, min(source_y - target_y, focal_point_y - halftarget_y)),
             ]
-            box.append(min(source_x, box[0] + target_x))
-            box.append(min(source_y, box[1] + target_y))
+            box.append(min(source_x, int(box[0]) + target_x))
+            box.append(min(source_y, int(box[1]) + target_y))
             # See if the image should be "smart cropped".
             if smart_crop:
                 left = top = 0
