@@ -78,7 +78,7 @@ options dictionary. If using aliases, you can use the
 The source can be given as a string (which will be looked up as an attribute of
 each object) or a callable that accepts the object and returns the source.
 
-For example:
+For example::
 
     >>> from easy_images.image import annotate
     >>> annotate(some_queryset, opts_map, 'person')

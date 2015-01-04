@@ -37,6 +37,7 @@ generation, you'll want to add:
         'easy_images.engine.easy_images_db_queue',
     )
 
-You'll also want to add this to your cron::
+You'll also want to add this to your cron (use different lock names for
+multiple simultaneous processes)::
 
-    ./manage.py generate_images --unless-lock=myproject_images
+    ./manage.py generate_images --lock=myproject_images
