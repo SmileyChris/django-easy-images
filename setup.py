@@ -34,6 +34,8 @@ setup(
     ],
     tests_require=(
         'coverage',
+        'mock',
+        'pillow',
     ),
     test_suite='runtests.runtests',
     classifiers=[
