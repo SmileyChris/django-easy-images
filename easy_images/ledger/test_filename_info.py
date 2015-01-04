@@ -67,7 +67,7 @@ class FilenameInfoTest(TestCase):
         self.assertEqual(same_ext_info.unique_ext, '')
 
     def test_unique_ext_highres(self):
-        opts = {'highres': 4}
+        opts = {'HIGHRES': 4}
         info = FilenameInfo(
             source_path='easy_images/fake.png', opts=opts,
             ledger=self.mock_ledger)

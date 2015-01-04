@@ -42,16 +42,13 @@ class DBLedger(BaseLedger):
             models.meta_json(*json_dict[image_hash])
             for image_hash in hashes]
 
-    def save(self, source_path, opts, **kwargs):
+    def save(self, source_path, opts, meta, **kwargs):
         """
         Save a reference of a processed image to the database.
         """
         image_hash = kwargs.get('image_hash')
         if image_hash is None:
             image_hash = self.hash(source_path, opts)
-        meta = kwargs.get('meta')
-        if meta is None:
-            meta = self.build_meta(**kwargs)
         # Remove date from meta because it is saved separately on the
         # ProcessedImage model.
         meta.pop('date')
@@ -104,9 +101,9 @@ class CachedDBLedger(DBLedger):
             image_cache.set_many(meta_not_cached, timeout=None)
         return meta_list
 
-    def save(self, source_path, opts, **kwargs):
+    def save(self, source_path, opts, meta, **kwargs):
         image_hash = self.hash(source_path, opts)
-        meta = self.build_meta(**kwargs)
         image_cache.set(image_hash, json.dumps(meta), timeout=None)
         kwargs['meta'] = meta
-        return super(CachedDBLedger, self).save(source_path, opts, **kwargs)
+        return super(CachedDBLedger, self).save(
+            source_path, opts, meta, **kwargs)

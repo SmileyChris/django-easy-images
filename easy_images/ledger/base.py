@@ -5,6 +5,7 @@ from .filename_info import FilenameInfo
 
 
 class BaseLedger(object):
+    filename_info_class = FilenameInfo
     filename = '{info.src_dir}{info.hash}{info.ext}'
     """
     The default file name format for generated images.
@@ -18,18 +19,8 @@ class BaseLedger(object):
     displays.
 
     It is added to the filename just just before the '.' of the extension for
-    images generated with the ``highres`` option.
+    images generated with the ``HIGHRES`` option.
     """
-
-    def exists(self, source_path, opts, **kwargs):
-        """
-        Whether the image with the provided opts has already been generated.
-
-        The base behaviour assumes the image exists already.
-
-        :rtype: boolean
-        """
-        return self.meta(source_path, opts) is not None
 
     def meta(self, source_path, opts, **kwargs):
         """
@@ -45,10 +36,6 @@ class BaseLedger(object):
         """
         return {}
 
-    def hash(self, source_path, opts, **kwargs):
-        info = FilenameInfo(source_path=source_path, opts=opts, ledger=self)
-        return info.hash
-
     def meta_list(self, sources, **kwargs):
         """
         Like :meth:`meta` but accepts multiple sources.
@@ -56,6 +43,11 @@ class BaseLedger(object):
         :param sources: a list of (source_path, opts) tuple pairs.
         """
         return [self.meta(*args) for args in sources]
+
+    def hash(self, source_path, opts, **kwargs):
+        info = self.filename_info_class(
+            source_path=source_path, opts=opts, ledger=self)
+        return info.hash
 
     def build_filename(self, source_path, opts, **kwargs):
         """
@@ -65,7 +57,7 @@ class BaseLedger(object):
         falling back to the default format coming from :attr:`filename`.
         """
         filename_fmt = opts.get('FILENAME') or self.filename
-        return filename_fmt.format(info=FilenameInfo(
+        return filename_fmt.format(info=self.filename_info_class(
             source_path=source_path, opts=opts, ledger=self, **kwargs))
 
     def output_extension(self, opts, source_ext, meta=None, **kwargs):
@@ -87,8 +79,3 @@ class BaseLedger(object):
         raise NotImplementedError()
 
     # TODO: save_list?
-
-    def build_meta(self, **kwargs):
-        return {
-            'date': datetime.datetime.utcnow().isoformat(),
-        }.update(**kwargs)
