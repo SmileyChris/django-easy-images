@@ -12,7 +12,7 @@ class BaseQueue(object):
         """
         self.start_processing(action)
         if priority == PRIORITY_CRITICAL:
-            result = self.generate(action)
+            result = self.generate_and_record(action)
             self.finished_processing(action)
             return result
         return self.add_to_queue(action=action, priority=priority, **kwargs)
@@ -47,6 +47,9 @@ class BaseQueue(object):
         return
 
     def get_keys(self, action):
+        """
+        Utility method to retrieve all the keys from an action.
+        """
         keys = []
         for opts in action['all_opts'].values():
             key = opts.get('KEY')
