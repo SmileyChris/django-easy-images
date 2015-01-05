@@ -31,6 +31,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'django>=1.6',
+        'lockfile',
+        'pillow',
     ],
     tests_require=(
         'coverage',
@@ -39,7 +41,7 @@ setup(
     ),
     test_suite='runtests.runtests',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 2 - Pre-Alpha',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',

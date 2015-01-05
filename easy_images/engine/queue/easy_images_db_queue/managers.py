@@ -7,8 +7,8 @@ class ActionManager(models.Model):
 
     def queue(self, limit=120):
         """
-        Generator that consumes and then yields actions (in a threadsafe
-        manor).
+        Generator that consumes and then yields action instances (in a
+        threadsafe manor).
         """
         actions = self.all()
         if limit:
