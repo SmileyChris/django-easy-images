@@ -6,6 +6,7 @@ import mock
 
 from . import base
 
+
 class BaseEngineTest(TestCase):
 
     def setUp(self):
@@ -89,30 +90,23 @@ class BaseEngineRecordTest(TestCase):
 
     def setUp(self):
         self.engine = base.BaseEngine()
-        self.real_import_string = base.import_string
         self.real_default_ledger = base.default_ledger
-        self.imported_ledger = mock.Mock()
-        base.import_string = mock.Mock(
-            return_value=lambda: self.imported_ledger)
         base.default_ledger = mock.Mock()
 
     def tearDown(self):
-        base.import_string = self.real_import_string
         base.default_ledger = self.real_default_ledger
 
     def test_record_no_key(self):
         self.engine.record('source.jpg', {'fit': (200, 0)})
-        self.assertFalse(base.import_string.called)
         self.assertFalse(base.default_ledger.save.called)
 
     def test_record(self):
         self.engine.record('source.jpg', {'fit': (200, 0), 'KEY': 'abc'})
-        self.assertFalse(base.import_string.called)
         self.assertTrue(base.default_ledger.save.called)
 
     def test_record_alt_ledger(self):
+        alt_ledger = mock.Mock()
         self.engine.record(
-            'source.jpg', {'fit': (200, 0), 'KEY': 'abc', 'LEDGER': 'def'})
+            'source.jpg', {'fit': (200, 0), 'KEY': 'abc'}, ledger=alt_ledger)
         self.assertFalse(base.default_ledger.save.called)
-        self.assertTrue(base.import_string.called)
-        self.assertTrue(self.imported_ledger.save.called)
+        self.assertTrue(alt_ledger.save.called)

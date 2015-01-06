@@ -37,17 +37,17 @@ class BaseEngine(object):
     def generate_and_record(self, action):
         self.generate(action)
         source_path = action['source']
+        ledger = action.get('ledger')
+        if ledger:
+            ledger = import_string(ledger)()
         for opts in action['all_opts'].values():
-            self.record(source_path, opts)
+            self.record(source_path, opts, ledger=ledger)
 
-    def record(self, source_path, opts):
+    def record(self, source_path, opts, ledger=None):
         key = opts.get('KEY')
         if not key:
             return
-        ledger = opts.get('LEDGER')
-        if ledger:
-            ledger = import_string(ledger)()
-        else:
+        if not ledger:
             ledger = default_ledger
         return ledger.save(source_path, opts)
 
