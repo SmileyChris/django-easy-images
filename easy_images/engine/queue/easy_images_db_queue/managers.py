@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.db import models
 
 
-class ActionManager(models.Model):
+class ActionManager(models.Manager):
 
     def queue(self, limit=120):
         """
