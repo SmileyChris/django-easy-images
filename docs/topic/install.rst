@@ -16,7 +16,7 @@ want:
     INSTALLED_APPS = (
         ...
         'easy_images',
-        'easy_images.ledger.easy_images_db',
+        'easy_images_db_ledger',
     )
 
 
@@ -29,12 +29,12 @@ generation, you'll want to add:
 .. code-block:: python
 
     EASY_IMAGES = {
-        'ENGINE': 'easy_images.engine.pil.DBQueueEngine'
+        'ENGINE': 'easy_images_db_queue.engine.DBQueueEngine'
     }
 
     INSTALLED_APPS = (
         ...
-        'easy_images.engine.easy_images_db_queue',
+        'easy_images_db_queue',
     )
 
 You'll also want to add this to your cron (use different lock names for
