@@ -9,34 +9,39 @@ from . import models
 
 class DBQueue(BaseQueue):
 
-    def add_to_queue(self, action, priority, **kwargs):
+    def add_to_queue(self, action, priority=None, **kwargs):
+        create_kwargs = {}
+        if priority is not None:
+            create_kwargs['priority'] = priority
         models.Action.objects.create(
-            action=json.dumps(action), priority=priority)
+            action=json.dumps(action), **create_kwargs)
 
     def processing(self, key, **kwargs):
         keys = list(
-            models.Processing.filter(pk=key).values_list('time', flat=True))
+            models.Processing.objects.filter(pk=key)
+            .values_list('time', flat=True))
         if keys:
             return keys[0]
         return False
 
     def processing_list(self, keys):
         processing = dict(
-            models.Processing.filter(pk__in=keys).values_list('pk', 'time'))
+            models.Processing.objects.filter(pk__in=keys)
+            .values_list('pk', 'time'))
         return [processing.get(key, False) for key in keys]
 
     def start_processing(self, action, keys=None, **kwargs):
         if keys is None:
             keys = self.get_keys(action)
         with transaction.atomic():
-            models.Processing.objects.filter(key__in=keys).delete()
+            models.Processing.objects.filter(pk__in=keys).delete()
             models.Processing.objects.bulk_create(
-                [models.Processing(key=key) for key in keys])
+                [models.Processing(pk=key) for key in keys])
 
     def finished_processing(self, action, keys=None, **kwargs):
         if keys is None:
             keys = self.get_keys(action)
-        models.Processing.filter(key__in=keys).delete()
+        models.Processing.filter(pk__in=keys).delete()
 
 
 class CachedDBQueue(CachedProcessingMixin, DBQueue):

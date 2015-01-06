@@ -20,7 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'easy_images',
     # 'easy_images.ledger.easy_images_db',
-    # 'easy_images.engine.queue.easy_images_db_queue'
+    'easy_images.engine.queue.easy_images_db_queue'
 ]
 
 MIDDLEWARE_CLASSES = (
