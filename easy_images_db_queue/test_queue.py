@@ -8,12 +8,14 @@ class BaseEngineTest(TestCase):
 
     def setUp(self):
         self.queue = queue.DBQueue()
+        # Uses lists instead of tuples because that's what will come back from
+        # the JSON data, which just makes it harder to assertEqual.
         self.example_action = {
             'source': 'easy_images/fake.jpg',
             'all_opts': {
-                'easy_images/fit.jpg': {'fit': (200, 0), 'KEY': 'abc'},
+                'easy_images/fit.jpg': {'fit': [200, 0], 'KEY': 'abc'},
                 'easy_images/crop.jpg': {
-                    'crop': (64, 64), 'upscale': True, 'KEY': 'def'},
+                    'crop': [64, 64], 'upscale': True, 'KEY': 'def'},
             },
         }
 
@@ -34,7 +36,7 @@ class BaseEngineTest(TestCase):
         ab = models.Processing.objects.create(pk='ab')
         ef = models.Processing.objects.create(pk='ef')
         self.assertTrue(
-            self.queue.processing_list('ab', 'cd', 'ef'),
+            self.queue.processing_list(keys=['ab', 'cd', 'ef']),
             [ab.time, False, ef.time])
 
     def test_start_processing(self):
@@ -42,7 +44,7 @@ class BaseEngineTest(TestCase):
         self.queue.start_processing(self.example_action)
         self.assertTrue(self.queue.get_keys.called)
         self.assertEqual(
-            list(models.Processing.objects.items_list('pk', flat=True)),
+            list(models.Processing.objects.values_list('pk', flat=True)),
             ['ab', 'cd'])
 
     def test_start_processing_overwrite(self):
@@ -50,16 +52,17 @@ class BaseEngineTest(TestCase):
         self.queue.get_keys = mock.Mock(return_value=['ab', 'cd'])
         self.queue.start_processing(self.example_action)
         self.assertEqual(
-            list(models.Processing.objects.items_list('pk', flat=True)),
+            list(models.Processing.objects.values_list('pk', flat=True)),
             ['ab', 'cd'])
-        self.assertNotEqual(ab, models.Processing.objects.get(pk='ab'))
+        self.assertNotEqual(
+            ab.time, models.Processing.objects.get(pk='ab').time)
 
     def test_start_processing_keys_provided(self):
         self.queue.get_keys = mock.Mock()
         self.queue.start_processing(self.example_action, keys=['ab', 'cd'])
         self.assertFalse(self.queue.get_keys.called)
         self.assertEqual(
-            list(models.Processing.objects.items_list('pk', flat=True)),
+            list(models.Processing.objects.values_list('pk', flat=True)),
             ['ab', 'cd'])
 
     def test_finished_processing(self):
@@ -71,7 +74,7 @@ class BaseEngineTest(TestCase):
         self.queue.finished_processing(self.example_action)
         self.assertTrue(self.queue.get_keys.called)
         self.assertEqual(
-            list(models.Processing.objects.items_list('pk', flat=True)),
+            list(models.Processing.objects.values_list('pk', flat=True)),
             ['ef'])
 
     def test_finished_processing_keys_provided(self):
@@ -83,5 +86,5 @@ class BaseEngineTest(TestCase):
         self.queue.finished_processing(self.example_action, keys=['ab', 'cd'])
         self.assertFalse(self.queue.get_keys.called)
         self.assertEqual(
-            list(models.Processing.objects.items_list('pk', flat=True)),
+            list(models.Processing.objects.values_list('pk', flat=True)),
             ['ef'])

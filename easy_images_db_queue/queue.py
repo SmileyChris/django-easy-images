@@ -41,7 +41,7 @@ class DBQueue(BaseQueue):
     def finished_processing(self, action, keys=None, **kwargs):
         if keys is None:
             keys = self.get_keys(action)
-        models.Processing.filter(pk__in=keys).delete()
+        models.Processing.objects.filter(pk__in=keys).delete()
 
 
 class CachedDBQueue(CachedProcessingMixin, DBQueue):
