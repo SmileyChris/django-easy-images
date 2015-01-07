@@ -23,22 +23,21 @@ def runtests(args=None):
     TestRunner = get_runner(settings)
     test_runner = TestRunner(verbosity=1, interactive=True)
     if not args:
-        cov = coverage()
+        import setuptools
+        packages = [p for p in setuptools.find_packages() if p.find('.') == -1]
+        cov = coverage(source=packages)
         cov.start()
     failures = test_runner.run_tests(args)
     if not args:
         cov.stop()
-        coverage_report(cov, report=not failures)
+        coverage_report(cov, report=True)  # not failures)
     sys.exit(failures)
 
 
 def coverage_report(cov, report):
     """
-    Outputs Coverage report to screen and coverage.xml.
+    Outputs Coverage report to screen and html.
     """
-    include = ['easy_images*']
-    omit = []
-    # omit = ['easy_images/*/*']
     try:
         if report:
             log.info("\nCoverage Report (showing uncovered modules):")
@@ -46,7 +45,7 @@ def coverage_report(cov, report):
             fake_stdout = BytesIO()
             sys.stdout = fake_stdout
             try:
-                cov.report(include=include, omit=omit)
+                cov.report()
             finally:
                 sys.stdout = real_stdout
             fake_stdout.seek(0)
@@ -55,8 +54,8 @@ def coverage_report(cov, report):
                 if line.endswith('100%'):
                     continue
                 print(line)
-        cov.html_report(include=include, omit=omit)
-        # cov.xml_report(include=include, omit=omit)
+        cov.html_report()
+        # cov.xml_report()
     except misc.CoverageException as e:
         log.error("Coverage Exception: %s" % e)
 
