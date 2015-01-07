@@ -1,11 +1,10 @@
-import collections
 import json
 
 from django.utils import six
 from easy_images.cache import image_cache
 from easy_images.ledger.base import BaseLedger
 
-from . import models
+from easy_images_db_ledger import models
 
 
 class DBLedger(BaseLedger):
@@ -29,18 +28,16 @@ class DBLedger(BaseLedger):
         """
         hashes = kwargs.get('hashes')
         if hashes is None:
-            hashes = (
-                self.hash(source_path, opts) for source_path, opts in sources)
-        json_dict = kwargs.get('json_dict')
-        if not json_dict:
-            json_dict = collections.defaultdict(None)
-        if hashes:
-            images = models.ProcessedImage.objects.filter(pk__in=hashes)
+            hashes = [
+                self.hash(source_path, opts) for source_path, opts in sources]
+        json_dict = kwargs.get('json_dict') or {}
+        missing_hashes = set(hashes) - set(json_dict)
+        if missing_hashes:
+            images = models.ProcessedImage.objects.filter(
+                pk__in=missing_hashes)
             for pk, meta, date in images.values_list('pk', 'meta', 'created'):
-                json_dict[pk] = (meta, date)
-        return [
-            models.meta_json(*json_dict[image_hash])
-            for image_hash in hashes]
+                json_dict[pk] = models.meta_json(meta, date)
+        return [json_dict.get(image_hash) for image_hash in hashes]
 
     def save(self, source_path, opts, meta, **kwargs):
         """
@@ -73,30 +70,25 @@ class CachedDBLedger(DBLedger):
     def meta_list(self, sources, **kwargs):
         hashes = kwargs.get('hashes')
         if hashes is None:
-            hashes = set(
-                self.hash(source_path, opts) for source_path, opts in sources)
-        else:
-            hashes = set(hashes)
+            hashes = [
+                self.hash(source_path, opts) for source_path, opts in sources]
         if hashes:
-            images_meta = six.iteritems(image_cache.get_many(hashes))
+            json_dict = dict(six.iteritems(image_cache.get_many(hashes)))
         else:
-            images_meta = ()
-        json_dict = collections.defaultdict(None, images_meta)
+            json_dict = {}
         add_to_cache = []
-        for key, value in six.iteritems(json_dict):
+        for i, value in enumerate(six.itervalues(json_dict)):
             if value is None:
-                add_to_cache.append(value)
-            else:
-                hashes.remove(key)
+                add_to_cache.append(i)
         kwargs['hashes'] = hashes
         kwargs['json_dict'] = json_dict
         meta_list = super(CachedDBLedger, self).meta_list(sources, **kwargs)
         # Add items found in DB into the cache.
         meta_not_cached = {}
-        for key in add_to_cache:
-            value = meta_list.get(key)
+        for i in add_to_cache:
+            value = meta_list[i]
             if value is not None:
-                meta_not_cached[key] = value
+                meta_not_cached[hashes[i]] = value
         if meta_not_cached:
             image_cache.set_many(meta_not_cached, timeout=None)
         return meta_list

@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.auth',
     'easy_images',
-    # 'easy_images_db_ledger',
+    'easy_images_db_ledger',
     'easy_images_db_queue',
 ]
 

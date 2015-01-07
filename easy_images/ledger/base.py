@@ -1,5 +1,4 @@
 from __future__ import unicode_literals
-import datetime
 
 from .filename_info import FilenameInfo
 
