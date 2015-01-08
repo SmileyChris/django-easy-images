@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 
 from django import template
@@ -59,3 +60,24 @@ class ImageAliasTagTest(TestCase):
             output = t.render(template.Context())
             self.assertEqual(output, '')
             aliases_mock.assert_called_with('alias', app_name=None)
+
+
+class ImageTag(TestCase):
+
+    def test_basic(self):
+        t = template.Template(
+            '{% load easy_images %}{% image "test.jpg" value=1 a %}')
+        with mock.patch.object(tags, 'EasyImage') as mocked:
+            mocked.side_effect = (
+                lambda source, opts: json.dumps(opts, sort_keys=True))
+            output = t.render(template.Context())
+            self.assertEqual(output, '{"a": true, "value": 1}')
+
+    def test_strip_none(self):
+        t = template.Template(
+            '{% load easy_images %}{% image "test.jpg" value1=a value2=b %}')
+        with mock.patch.object(tags, 'EasyImage') as mocked:
+            mocked.side_effect = (
+                lambda source, opts: json.dumps(opts, sort_keys=True))
+            output = t.render(template.Context({'a': 'A'}))
+            self.assertEqual(output, '{"value1": "A"}')

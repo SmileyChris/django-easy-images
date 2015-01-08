@@ -39,7 +39,7 @@ class ImageNode(template.Node):
         for key, value in six.iteritems(self.opts):
             if hasattr(value, 'resolve'):
                 value = value.resolve(context)
-            if value is not None:
+            if value is not None and value != '':
                 opts[key] = value
         image = EasyImage(source, opts)
         if self.as_name:
@@ -48,19 +48,20 @@ class ImageNode(template.Node):
         return image
 
 
-def _build_opts(args):
+def _build_opts(args, parser):
     for arg in args:
-        parts = args.split('=', 1)
+        parts = arg.split('=', 1)
         key = parts[0]
         try:
-            value = parts[1]
+            value = parser.compile_filter(parts[1])
         except IndexError:
             value = True
         if not value:
             continue
-        dimensions = re_dimensions.match(value)
-        if dimensions:
-            value = (int(part) for part in dimensions.groups())
+        if isinstance(value, six.string_types):
+            dimensions = re_dimensions.match(value)
+            if dimensions:
+                value = (int(part) for part in dimensions.groups())
         yield key, value
 
 
@@ -69,7 +70,7 @@ def do_image(parser, token):
     args = token.split_contents()
     tag_name = args.pop(0)
     as_name = None
-    if args >= 2:
+    if len(args) >= 2:
         if args[-2] == 'as':
             as_name = args[-1]
             args = args[:-2]
@@ -78,5 +79,5 @@ def do_image(parser, token):
             '{0} tag requires at least the source and one option'.format(
                 tag_name))
     source = parser.compile_filter(args.pop(0))
-    opts = dict(_build_opts(args))
+    opts = dict(_build_opts(args, parser))
     return ImageNode(source, opts, as_name)
