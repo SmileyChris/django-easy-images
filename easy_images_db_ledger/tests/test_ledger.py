@@ -1,13 +1,14 @@
 from django.test import TestCase
 import mock
 
-from easy_images_db_ledger import ledger, models
+import easy_images_db_ledger
+from easy_images_db_ledger import models
 
 
 class LedgerTest(TestCase):
 
     def setUp(self):
-        self.ledger = ledger.DBLedger()
+        self.ledger = easy_images_db_ledger.DBLedger()
 
     def test_meta(self):
         meta = {'fish': True}
