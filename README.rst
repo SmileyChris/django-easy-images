@@ -17,17 +17,23 @@ To make it easier to manage the different option dictionaries, it is
 recommended to define aliases that you can use to centralize all the image
 generation options in a single place.
 
-In your template
+In your settings::
+
+	EASY_IMAGES = {
+		'ALIASES': {
+			'smallbox': {'crop': (32, 32), 'upscale': True},
+		},
+	}
 
 Then to generate thumbs in a Django template just use::
 
-    <img src="{{ person.avatar|image:'thumbnail' }}" alt="">
+    <img src="{{ person.avatar|image:'smallbox' }}" alt="">
 
 Or in Python, use::
 
     from easy_images.aliases import aliases
     from easy_images.images import EasyImage
-    EasyImage('some/file', aliases.get('thumbnail')).generate()
+    EasyImage('some/file', aliases.get('smallbox')).generate()
 
 
 See docs for details.
