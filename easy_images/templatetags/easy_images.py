@@ -23,7 +23,7 @@ def image(source, opts):
 
 @register.assignment_tag(takes_context=True)
 def image_alias(context, alias):
-    return aliases.get(force_text(alias), app_name=context.app_name)
+    return aliases.get(force_text(alias), app_name=context.current_app)
 
 
 class ImageNode(template.Node):
