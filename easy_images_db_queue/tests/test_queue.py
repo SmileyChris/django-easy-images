@@ -1,7 +1,9 @@
 from django.test import TestCase
 import mock
 
-from . import queue, models
+from easy_images.engine.queue.base import PRIORITY_LOW
+
+from .. import queue, models
 
 
 class BaseEngineTest(TestCase):
@@ -23,6 +25,11 @@ class BaseEngineTest(TestCase):
         self.queue.add_to_queue(self.example_action)
         action_obj = models.Action.objects.get()
         self.assertEqual(action_obj.data, self.example_action)
+
+    def test_add_to_queue_custom_priority(self):
+        self.queue.add_to_queue(self.example_action, priority=PRIORITY_LOW)
+        action_obj = models.Action.objects.get()
+        self.assertEqual(action_obj.priority, PRIORITY_LOW)
 
     def test_processing_match(self):
         key = 'abc'

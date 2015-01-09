@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from django.db import models
+from . import db_delete_manager
 
 
-class ActionManager(models.Manager):
+class ActionManager(db_delete_manager.CountDeleteManager):
 
     def queue(self, limit=120):
         """

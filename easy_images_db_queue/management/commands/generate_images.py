@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 import lockfile
 
 from easy_images.engine import default
-from easy_images.engine.queue.easy_images_db_queue import models
+from easy_images_db_queue import models
 
 
 class Command(BaseCommand):
@@ -16,7 +16,7 @@ class Command(BaseCommand):
         make_option(
             '--lock',
             help="Fail silently if this lock has been taken by another "
-            "process already."),
+            "process already (default=easy_images)."),
         make_option(
             '--force', action='store_true',
             help="Break any existing lock and acquire it for this process."),
@@ -31,14 +31,15 @@ class Command(BaseCommand):
                 action_obj = models.Action.objects.pop()
                 if not action_obj:
                     break
-                engine = self.get_engine(action_obj.data)
-                engine.generate(self)
+                data = action_obj.data
+                engine = self.get_engine(data)
+                engine.generate(data)
         finally:
             lock.release()
         # TODO: some feedback unless low verbosity?
 
-    def get_engine(self, action):
-        engine_path = action.get('engine')
+    def get_engine(self, opts):
+        engine_path = opts.get('engine')
         if engine_path:
             return default.import_string(engine_path)()
         return default.default_engine
@@ -56,9 +57,10 @@ class Command(BaseCommand):
                 try:
                     lock.acquire(timeout=-1)
                 except lockfile.AlreadyLocked:
-                    sys.stderr.write(
-                        "Could not establish lock even after breaking it.\n")
+                    self.stderr.write(
+                        "Could not establish lock even after breaking it.")
                     sys.exit(1)
-            sys.stderr.write("Already locked, aborting.\n")
-            sys.exit(0)
+            else:
+                self.stderr.write("Already locked, aborting.")
+                sys.exit(0)
         return lock
