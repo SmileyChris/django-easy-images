@@ -35,7 +35,8 @@ class PILGenerator(output.PILOutput):
         return images
 
     def build_source(self, source_obj):
-        source_obj.seek(0)
+        if hasattr(source_obj, 'seek'):
+            source_obj.seek(0)
         image = PIL.Image.open(source_obj)
 
         # Fully load the image now to catch any problems with the image
