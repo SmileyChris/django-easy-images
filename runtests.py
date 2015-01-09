@@ -22,6 +22,7 @@ def runtests(args=None):
     if not args or True:
         import setuptools
         packages = [p for p in setuptools.find_packages() if p.find('.') == -1]
+        # packages = ['easy_images_db_queue']
         cov = coverage(source=packages)
         cov.start()
     django.setup()
@@ -49,13 +50,28 @@ def coverage_report(cov, report):
             finally:
                 sys.stdout = real_stdout
             fake_stdout.seek(0)
+            complete = True
+            last_line = None
             for line in fake_stdout.readlines():
                 line = line.rstrip()
-                if line.endswith('100%'):
-                    continue
-                print(line)
+                if line.endswith('%'):
+                    last_line = line
+                    if not line.endswith('100%'):
+                        complete = False
+                        break
+            fake_stdout.seek(0)
+            if complete and last_line:
+                for line in fake_stdout.readlines()[:2]:
+                    print(line.rstrip())
+                print last_line
+            else:
+                for line in fake_stdout.readlines():
+                    line = line.rstrip()
+                    if line.endswith('100%'):
+                        continue
+                    print(line)
         cov.html_report()
-        # cov.xml_report()
+        cov.save()   # Save the .coverage file so it can be used if necessary.
     except misc.CoverageException as e:
         log.error("Coverage Exception: %s" % e)
 
