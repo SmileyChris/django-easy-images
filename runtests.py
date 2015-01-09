@@ -19,17 +19,16 @@ from django.test.utils import get_runner
 
 def runtests(args=None):
     os.environ['DJANGO_SETTINGS_MODULE'] = 'easy_images.tests.settings'
-    if not args or True:
+    if not args:
         import setuptools
         packages = [p for p in setuptools.find_packages() if p.find('.') == -1]
-        # packages = ['easy_images_db_queue']
         cov = coverage(source=packages)
         cov.start()
     django.setup()
     TestRunner = get_runner(settings)
     test_runner = TestRunner(verbosity=1, interactive=True)
     failures = test_runner.run_tests(args)
-    if not args or True:
+    if not args:
         cov.stop()
         coverage_report(cov, report=not failures)
     sys.exit(failures)
