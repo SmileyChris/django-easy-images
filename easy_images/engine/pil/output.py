@@ -23,7 +23,7 @@ class PILOutput(object):
             options.setdefault('quality', 85)
         saved = False
         if fmt == 'JPEG':
-            progressive = options.get('progressive', 100)
+            progressive = options.pop('progressive', 100)
             if progressive:
                 if progressive is True or max(image.size) >= int(progressive):
                     options['progressive'] = True
