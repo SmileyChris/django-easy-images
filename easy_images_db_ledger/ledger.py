@@ -48,7 +48,7 @@ class DBLedger(BaseLedger):
             image_hash = self.hash(source_path, opts)
         # Remove date from meta because it is saved separately on the
         # ProcessedImage model.
-        meta.pop('date')
+        meta.pop('date', None)
         meta_text = json.dumps(meta)
         image = models.ProcessedImage(pk=image_hash, meta=meta_text)
         image.save()
@@ -59,7 +59,7 @@ class CachedDBLedger(DBLedger):
 
     def meta(self, source_path, opts, **kwargs):
         image_hash = self.hash(source_path, opts)
-        meta = models.json_dict(image_cache.get(image_hash))
+        meta = models.meta_json(image_cache.get(image_hash))
         if meta is not None:
             return meta
         kwargs['image_hash'] = image_hash
@@ -72,12 +72,12 @@ class CachedDBLedger(DBLedger):
         if hashes is None:
             hashes = [
                 self.hash(source_path, opts) for source_path, opts in sources]
+        json_dict = {}
         if hashes:
-            json_dict = dict(six.iteritems(image_cache.get_many(hashes)))
-        else:
-            json_dict = {}
+            json_dict.update(six.iteritems(image_cache.get_many(hashes)))
         add_to_cache = []
-        for i, value in enumerate(six.itervalues(json_dict)):
+        for i, key in enumerate(hashes):
+            value = json_dict.get(key)
             if value is None:
                 add_to_cache.append(i)
         kwargs['hashes'] = hashes
@@ -95,7 +95,7 @@ class CachedDBLedger(DBLedger):
 
     def save(self, source_path, opts, meta, **kwargs):
         image_hash = self.hash(source_path, opts)
-        image_cache.set(image_hash, json.dumps(meta), timeout=None)
-        kwargs['meta'] = meta
+        image_cache.set(image_hash, meta, timeout=None)
+        kwargs['image_hash'] = image_hash
         return super(CachedDBLedger, self).save(
-            source_path, opts, meta, **kwargs)
+            source_path=source_path, opts=opts, meta=meta, **kwargs)
