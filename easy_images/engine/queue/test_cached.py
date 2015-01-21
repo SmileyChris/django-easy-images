@@ -78,6 +78,7 @@ class ProcessingListTest(BaseTest):
             self.assertEqual(output, ['XXX', 'B', False])
         finally:
             cached.image_cache.delete(cache_keys[0])
+            cached.image_cache.delete(cache_keys[2])
 
 
 class StartFinishedProcessingTest(BaseTest):
