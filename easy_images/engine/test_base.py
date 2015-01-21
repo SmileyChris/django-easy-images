@@ -7,10 +7,16 @@ import mock
 from . import base
 
 
+class TestEngine(base.BaseEngine):
+
+    def generate(self, *args, **kwargs):
+        return 'ok, generated'
+
+
 class BaseEngineTest(TestCase):
 
     def setUp(self):
-        self.engine = base.BaseEngine()
+        self.engine = TestEngine()
         self.example_action = {
             'source': 'easy_images/fake.jpg',
             'all_opts': {
@@ -19,14 +25,13 @@ class BaseEngineTest(TestCase):
             },
         }
 
+    def test_abc_protection(self):
+        self.assertRaises(TypeError, base.BaseEngine)
+
     def test_add(self):
         self.engine.generate = mock.Mock()
         self.engine.add(self.example_action)
         self.engine.generate.assert_called_once_with(self.example_action)
-
-    def test_generate(self):
-        self.assertRaises(
-            NotImplementedError, self.engine.generate, self.example_action)
 
     def test_generate_and_record(self):
         self.engine.generate = mock.Mock()
@@ -89,7 +94,7 @@ class BaseEngineTest(TestCase):
 class BaseEngineRecordTest(TestCase):
 
     def setUp(self):
-        self.engine = base.BaseEngine()
+        self.engine = TestEngine()
         self.real_default_ledger = base.default_ledger
         base.default_ledger = mock.Mock()
 

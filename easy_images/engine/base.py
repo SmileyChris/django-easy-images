@@ -13,11 +13,15 @@ An action looks like this::
         }
     }
 """
+import abc
+
 from django.core.files import File
+from django.utils import six
 
 from easy_images.ledger.default import default_ledger, import_string
 
 
+@six.add_metaclass(abc.ABCMeta)
 class BaseEngine(object):
 
     def add(self, action, **kwargs):
@@ -28,11 +32,11 @@ class BaseEngine(object):
         """
         return self.generate_and_record(action)
 
+    @abc.abstractmethod
     def generate(self, action):
         """
         Generate image(s).
         """
-        raise NotImplementedError()
 
     def generate_and_record(self, action):
         self.generate(action)
