@@ -38,12 +38,12 @@ class CachedProcessingMixin(object):
             timeout=None)
         if not self.only_cache:
             super(CachedProcessingMixin, self).start_processing(
-                action, keys=keys, **kwargs)
+                action=action, keys=keys, **kwargs)
 
     def finished_processing(self, action, keys=None, **kwargs):
         if keys is None:
             keys = self.get_keys(action)
-        image_cache.delete_many(keys)
+        image_cache.delete_many(self.cache_prefix + key for key in keys)
         if not self.only_cache:
             super(CachedProcessingMixin, self).finished_processing(
-                action, keys=keys, **kwargs)
+                action=action, keys=keys, **kwargs)

@@ -21,11 +21,24 @@ class BaseTest(TestCase):
             def processing_list(self, *args, **kwargs):
                 return self._processing_list(*args, **kwargs)
 
+            start_processing = mock.Mock()
+            finished_processing = mock.Mock()
+
+
         class TestObj(cached.CachedProcessingMixin, FakeEngine):
             pass
 
         self.engine_class = FakeEngine
         self.obj = TestObj()
+
+        self.example_action = {
+            'source': 'easy_images/fake.jpg',
+            'all_opts': {
+                'easy_images/fit.jpg': {'fit': [200, 0], 'KEY': 'abc'},
+                'easy_images/crop.jpg': {
+                    'crop': [64, 64], 'upscale': True, 'KEY': 'def'},
+            },
+        }
 
 
 class ProcessingTest(BaseTest):
@@ -84,7 +97,34 @@ class ProcessingListTest(BaseTest):
 class StartFinishedProcessingTest(BaseTest):
 
     def test_start_processing(self):
-        raise NotImplementedError
+        keys = ['ab', 'cd']
+        self.obj.get_keys = mock.Mock(return_value=keys)
+        cache_keys = [
+            '{0}{1}'.format(self.obj.cache_prefix, key) for key in keys]
+        try:
+            self.obj.start_processing(self.example_action)
+            for key in cache_keys:
+                self.assertTrue(
+                    cached.image_cache.get(key),
+                    'Expected to find {0} in cache'.format(key))
+            self.engine_class.start_processing.assert_called_with(
+                action=self.example_action, keys=keys)
+        finally:
+            for key in cache_keys:
+                cached.image_cache.delete(key)
 
     def test_finished_processing(self):
-        raise NotImplementedError
+        keys = ['ab', 'cd']
+        self.obj.get_keys = mock.Mock(return_value=keys)
+        cache_keys = [
+            '{0}{1}'.format(self.obj.cache_prefix, key) for key in keys]
+        cached.image_cache.set(cache_keys[1], True)
+        try:
+            self.obj.finished_processing(self.example_action)
+            for key in cache_keys:
+                self.assertFalse(
+                    cached.image_cache.get(key),
+                    "Shouldn't find {0} in cache".format(key))
+        finally:
+            for key in cache_keys:
+                cached.image_cache.delete(key)

@@ -7,6 +7,7 @@ An action looks like this::
 
     {
         "source": source_url_or_path,
+        "ledger": current_ledger,
         "all_opts": {
             output_path: {'fit': (200, 0), 'KEY': '...'},
             output_path: {'crop': (64, 64), 'upscale': True, 'KEY': '...'},
