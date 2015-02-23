@@ -1,7 +1,5 @@
 from django.test import TestCase
-from easy_images.cache import image_cache
 import mock
-
 
 import easy_images_db_ledger
 from easy_images_db_ledger import models
