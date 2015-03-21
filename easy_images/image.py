@@ -242,8 +242,8 @@ class EasyImageBatch(object):
             if not force:
                 if processing or image.meta is not None:
                     continue
-            all_opts = actions.setdefault(image.source_path, [])
-            all_opts.append(image.opts)
+            all_opts = actions.setdefault(image.source_path, {})
+            all_opts[image.name] = image.opts
         for source_path, all_opts in six.iteritems(actions):
             self.engine.add({'source': source_path, 'all_opts': all_opts})
 
