@@ -28,13 +28,13 @@ def image_alias(context, alias):
 
 class ImageNode(template.Node):
 
-    def __init__(self, source, opts, as_name):
-        self.source = source
+    def __init__(self, source_obj, opts, as_name):
+        self.source_obj = source_obj
         self.opts = opts
         self.as_name = as_name
 
     def render(self, context):
-        source = self.source.resolve(context)
+        source = self.source_obj.resolve(context)
         opts = {}
         for key, value in six.iteritems(self.opts):
             if hasattr(value, 'resolve'):
@@ -54,14 +54,15 @@ def _build_opts(args, parser):
         key = parts[0]
         try:
             value = parser.compile_filter(parts[1])
+            str_value = value.resolve({})
         except IndexError:
             value = True
+            str_value = ''
         if not value:
             continue
-        if isinstance(value, six.string_types):
-            dimensions = re_dimensions.match(value)
-            if dimensions:
-                value = (int(part) for part in dimensions.groups())
+        dimensions = re_dimensions.match(str_value)
+        if dimensions:
+            value = [int(part) for part in dimensions.groups()]
         yield key, value
 
 
