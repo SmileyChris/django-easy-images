@@ -251,7 +251,9 @@ class EasyImageBatch(object):
 def annotate(obj_list, opts_map, get_source, batch=None):
     if not callable(get_source):
         source_attr = get_source
-        get_source = lambda obj: getattr(obj, source_attr)
+
+        def get_source(obj):
+            return getattr(obj, source_attr)
 
     generate = batch is None
     if generate:
