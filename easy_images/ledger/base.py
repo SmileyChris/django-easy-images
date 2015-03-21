@@ -59,8 +59,9 @@ class BaseLedger(object):
         falling back to the default format coming from :attr:`filename`.
         """
         filename_fmt = opts.get('FILENAME') or self.filename
-        return filename_fmt.format(info=self.filename_info_class(
-            source_path=source_path, opts=opts, ledger=self, **kwargs))
+        info = self.get_filename_info(
+            source_path=source_path, opts=opts, **kwargs)
+        return filename_fmt.format(info=info)
 
     def output_extension(self, opts, source_ext, meta=None, **kwargs):
         """
