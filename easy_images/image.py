@@ -81,7 +81,7 @@ class EasyImage(object):
         url = self.build_url()
         if processing:
             return self.engine.processing_url(
-                source=self.source_path, opts=self.opts, source_url=url)
+                source_path=self.source_path, opts=self.opts, source_url=url)
         return url
 
     @property
