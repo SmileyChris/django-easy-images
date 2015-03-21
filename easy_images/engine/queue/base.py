@@ -8,7 +8,8 @@ class BaseQueue(object):
 
     def add(self, action, priority=PRIORITY_NORMAL, **kwargs):
         """
-        This method should add the item to a queue.
+        Add the item to a queue unless critical priority, in which case
+        generate the image instantly.
         """
         self.start_processing(action)
         if priority == PRIORITY_CRITICAL:
@@ -17,25 +18,24 @@ class BaseQueue(object):
             return result
         return self.add_to_queue(action=action, priority=priority, **kwargs)
 
+    @abc.abstractmethod
     def add_to_queue(self, action, **kwargs):
-        raise NotImplementedError()
+        """
+        Add an action to the queue.
+        """
 
+    @abc.abstractmethod
     def processing(self, key, **kwargs):
         """
         Check to see if this key is on the queue already.
-
-        This method must be overridden in a subclass.
         """
-        raise NotImplementedError()
 
+    @abc.abstractmethod
     def start_processing(self, action, **kwargs):
         """
         Hook to record that processing has started for all the options provided
         in the action message.
-
-        This method must be overridden in a subclass.
         """
-        raise NotImplementedError()
 
     def finished_processing(self, action, **kwargs):
         """

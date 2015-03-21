@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import abc
 
 from .filename_info import FilenameInfo
 
@@ -69,12 +70,10 @@ class BaseLedger(object):
             return '.png'
         return '.jpg'
 
-    def save(self, source_path, opts, **kwargs):
+    @abc.abstractmethod
+    def save(self, source_path, opts, meta, **kwargs):
         """
         Save the data.
-
-        Needs to be implemented by a subclass.
         """
-        raise NotImplementedError()
 
     # TODO: save_list?
