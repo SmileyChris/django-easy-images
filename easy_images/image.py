@@ -24,7 +24,7 @@ class EasyImage(object):
         The filename for this image.
         """
         return self.ledger.build_filename(
-            source_path=self.source_path, opts=self.opts)
+            source_path=self.source_path, opts=self.opts, meta=self.meta)
 
     @property
     def hash(self):
