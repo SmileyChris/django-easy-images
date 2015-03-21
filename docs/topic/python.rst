@@ -81,4 +81,26 @@ each object) or a callable that accepts the object and returns the source.
 For example::
 
     >>> from easy_images.image import annotate
-    >>> annotate(some_queryset, opts_map, 'person')
+    >>> annotate(person_queryset, opts_map, 'profile_photo')
+
+Batch generation
+----------------
+
+To generate multiple images in a single batch, use the ``EasyImageBatch``::
+
+    >>> from easy_images.image import EasyImageBatch
+    >>> batch = EasyImageBatch()
+    >>> opts = [
+    ...    {'crop': (16, 16)},
+    ...    {'crop': (32, 32)},
+    ...    {'scale': (400, 0)},
+    ... ]
+    >>> batch.add(person1.profile_photo, opts)
+    >>> batch.add(person2.profile_photo, opts)
+    >>> batch.generate()
+
+You can also use it together with ``annotate``::
+
+    >>> annotate(person_queryset, profile_map, 'profile_photo', batch=batch)
+    >>> annotate(person_queryset, cat_map, 'cat_photo', batch=batch)
+    >>> batch.generate()
