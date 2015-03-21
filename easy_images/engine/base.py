@@ -126,11 +126,11 @@ class BaseEngine(object):
         import easy_images.engine.default
         return easy_images.engine.default.default_storage
 
-    def save(self, path, obj):
+    def save(self, path, obj, opts):
         """
         Save data from file-like ``obj`` to a relative path.
         """
-        return self.get_generated_storage().save(path, File(obj))
+        return self.get_generated_storage(opts).save(path, File(obj))
 
     # def clean_opts(opts, remove_upper=False, **kwargs):
     #     """
