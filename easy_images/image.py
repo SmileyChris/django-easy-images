@@ -31,7 +31,8 @@ class EasyImage(object):
         """
         A hash representing this combination of source image and options.
         """
-        return self.ledger.hash(source_path=self.source_path, opts=self.opts)
+        return self.ledger.get_filename_info(
+            source_path=self.source_path, opts=self.opts).hash
 
     @property
     def processing(self):

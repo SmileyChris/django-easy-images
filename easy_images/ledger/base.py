@@ -44,10 +44,12 @@ class BaseLedger(object):
         """
         return [self.meta(*args) for args in sources]
 
-    def hash(self, source_path, opts, **kwargs):
-        info = self.filename_info_class(
-            source_path=source_path, opts=opts, ledger=self)
-        return info.hash
+    def get_filename_info(self, source_path, opts, **kwargs):
+        info = kwargs.get('filename_info')
+        if info is not None:
+            return info
+        return self.filename_info_class(
+            source_path=source_path, opts=opts, ledger=self, **kwargs)
 
     def build_filename(self, source_path, opts, **kwargs):
         """
