@@ -21,17 +21,22 @@ class PILGenerator(output.PILOutput):
         return self.default_processors
 
     def generate(self, action):
-        source_obj = self.get_source(action['source'])
+        if not action.get('all_opts'):
+            return {}
+        opts = action['all_opts'].values()[0]
+        source_obj = self.get_source(action['source'], opts)
         source_image = self.build_source(source_obj)
         if not source_image:
-            return []
-        images = []
+            return {}
+        images = {}
         for output_target, opts in action['all_opts'].items():
             image = source_image
             for processor in self.get_processors():
                 image = processor(image, **opts)
-            self.save(image, output_target, opts)
-            images.append(image)
+            output_file = self.write_image(
+                image, output_target, destination=None, **opts)
+            self.save(output_target, output_file, opts)
+            images[output_target] = image
         return images
 
     def build_source(self, source_obj):

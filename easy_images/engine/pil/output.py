@@ -6,10 +6,12 @@ except ImportError:
 
 from PIL import Image
 
+from . import utils
+
 
 class PILOutput(object):
 
-    def save(self, image, filename, destination=None, **options):
+    def write_image(self, image, filename, destination=None, **options):
         """
         Save a PIL image.
         """
@@ -41,3 +43,12 @@ class PILOutput(object):
         if hasattr(destination, 'seek'):
             destination.seek(0)
         return destination
+
+    def build_meta(self, image):
+        """
+        Build a dictionary of metadata for an image.
+        """
+        return {
+            'size': image.size,
+            'transparent': utils.is_transparent(image),
+        }

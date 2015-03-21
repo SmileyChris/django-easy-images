@@ -29,32 +29,45 @@ class BaseEngine(object):
         """
         Standard way of adding an action to be processed by the engine.
 
-        If the image is generated in-process, it should be returned.
+        If the images are generated in-process, they should be returned.
         """
         return self.generate_and_record(action)
 
     @abc.abstractmethod
     def generate(self, action):
         """
-        Generate image(s).
+        Generate image(s) and save to storage.
         """
 
     def generate_and_record(self, action):
-        self.generate(action)
-        source_path = action['source']
+        """
+        Generate processed images, save them to storage, then record the change
+        in the ledger.
+        """
         ledger = action.get('ledger')
         if ledger:
             ledger = import_string(ledger)()
-        for opts in action['all_opts'].values():
-            self.record(source_path, opts, ledger=ledger)
-
-    def record(self, source_path, opts, ledger=None):
-        key = opts.get('KEY')
-        if not key:
-            return
-        if not ledger:
+        else:
             ledger = default_ledger
-        return ledger.save(source_path, opts)
+
+        images = self.generate(action)
+        source_path = action['source']
+        for output_target, opts in action['all_opts'].items():
+            image = images.get(output_target) if images else None
+            self.record(source_path, opts, ledger, image)
+        return images
+
+    def record(self, source_path, opts, ledger, image):
+        if not opts.get('KEY'):
+            return
+        meta = self.build_meta(image)
+        return ledger.save(source_path, opts, meta)
+
+    @abc.abstractmethod
+    def build_meta(self, image):
+        """
+        Build a dictionary of metadata for an image.
+        """
 
     def processing(self, key, **kwargs):
         """
