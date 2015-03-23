@@ -105,9 +105,12 @@ class FilenameInfo(object):
         :attr:`~easy_images.ledger.base.Ledger.highres_infix`.
         """
         if not hasattr(self, '_cached_ext'):
-            self._cached_ext = self._ledger.output_extension(
-                source_path=self._source_path, opts=self._opts,
-                source_ext=self.src_ext, **self._kwargs)
+            self._cached_ext = self._kwargs.get('processed_ext')
+            if self._cached_ext is None:
+                meta = self._ledger.meta(
+                    source_path=self._source_path, opts=self._opts)
+                self._cached_ext = self._ledger.output_extension(
+                    meta=meta, source_ext=self.src_ext, **self._kwargs)
             highres = self._opts.get('HIGHRES')
             if highres:
                 infix = self._ledger.highres_infix.format(highres=highres)

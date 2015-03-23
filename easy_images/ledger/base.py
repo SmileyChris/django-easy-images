@@ -63,13 +63,10 @@ class BaseLedger(object):
             source_path=source_path, opts=opts, **kwargs)
         return filename_fmt.format(info=info)
 
-    def output_extension(
-            self, source_path, opts, source_ext, meta=None, **kwargs):
+    def output_extension(self, meta, **kwargs):
         """
         The generated filename extension (including the ``.``).
         """
-        if meta is None:
-            meta = self.meta(source_path, opts)
         if meta and meta.get('transparent'):
             return '.png'
         return '.jpg'
