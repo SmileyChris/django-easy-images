@@ -107,10 +107,12 @@ class FilenameInfo(object):
         if not hasattr(self, '_cached_ext'):
             self._cached_ext = self._kwargs.get('processed_ext')
             if self._cached_ext is None:
-                meta = self._ledger.meta(
-                    source_path=self._source_path, opts=self._opts)
-                self._cached_ext = self._ledger.output_extension(
-                    meta=meta, source_ext=self.src_ext, **self._kwargs)
+                kwargs = self._kwargs.copy()
+                kwargs['source_ext'] = self.src_ext
+                if 'meta' not in kwargs:
+                    kwargs['meta'] = self._ledger.meta(
+                        source_path=self._source_path, opts=self._opts)
+                self._cached_ext = self._ledger.output_extension(**kwargs)
             highres = self._opts.get('HIGHRES')
             if highres:
                 infix = self._ledger.highres_infix.format(highres=highres)

@@ -43,7 +43,10 @@ class BaseLedgerTest(TestCase):
     def test_build_filename_custom(self):
         filename = self.ledger.build_filename(
             source_path='easy_images/fake.jpg',
-            opts={'fit': (128, 128), 'FILENAME': '{info.hash}{info.ext}'})
+            opts={
+                'fit': (128, 128),
+                'FILENAME_FORMAT': '{info.hash}{info.ext}',
+            })
         self.assertEqual(filename, 'ahash.ext')
 
     def test_output_extension(self):

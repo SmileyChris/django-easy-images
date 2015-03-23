@@ -58,7 +58,7 @@ class BaseLedger(object):
         The format is looked up in the opts matching the ``FILENAME`` key,
         falling back to the default format coming from :attr:`filename`.
         """
-        filename_fmt = opts.get('FILENAME') or self.filename
+        filename_fmt = opts.get('FILENAME_FORMAT') or self.filename
         info = self.get_filename_info(
             source_path=source_path, opts=opts, **kwargs)
         return filename_fmt.format(info=info)

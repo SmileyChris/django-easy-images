@@ -4,6 +4,27 @@ from easy_images.engine.default import default_engine
 from easy_images.ledger.default import default_ledger
 
 
+def build_action(source_path, opts_list, ledger):
+    action = {'source': source_path, 'opts': []}
+    # If not default ledger, add its Python representation into the action.
+    if ledger and ledger is not default_ledger:
+        action['ledger'] = '{1}.{2}'.format(
+            ledger.__module__, ledger.__class__.__name__)
+    # Add filenames.
+    for opts in opts_list:
+        if 'FILENAME' not in opts:
+            opts = dict(opts)
+            opaque_ext = ledger.output_extension({'transparent': False})
+            opts['FILENAME'] = ledger.build_filename(
+                source_path, opts, processed_ext=opaque_ext)
+            transparent_ext = ledger.output_extension({'transparent': True})
+            if transparent_ext != opaque_ext:
+                opts['FILENAME_TRANSPARENT'] = ledger.build_filename(
+                    source_path, opts, processed_ext=transparent_ext)
+        action['opts'].append(opts)
+    return action
+
+
 @python_2_unicode_compatible
 class EasyImage(object):
 
@@ -144,8 +165,7 @@ class EasyImage(object):
         else:
             opts = {'KEY': self.hash}
             opts.update(self.opts)
-        action = {
-            'source': self.source_path, 'all_opts': {self.name: opts}}
+        action = build_action(self.source_path, [self.opts], self.ledger)
         return self.engine.add(action)
 
 
@@ -243,12 +263,13 @@ class EasyImageBatch(object):
             if not force:
                 if processing or image.meta is not None:
                     continue
-            all_opts = actions.setdefault(image.source_path, {})
-            all_opts[image.name] = image.opts
+            opts = actions.setdefault(image.source_path, [])
+            opts.append(image.opts)
             new.append(image)
         generated = False
-        for source_path, all_opts in six.iteritems(actions):
-            if self.engine.add({'source': source_path, 'all_opts': all_opts}):
+        for source_path, opts in six.iteritems(actions):
+            action = build_action(source_path, opts, self.ledger)
+            if self.engine.add(action):
                 generated = True
         if generated:
             # Populate the metadata for newly generated images.

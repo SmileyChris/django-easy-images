@@ -20,25 +20,6 @@ class PILGenerator(output.PILOutput):
     def get_processors(self):
         return self.default_processors
 
-    def generate(self, action):
-        if not action.get('all_opts'):
-            return {}
-        opts = action['all_opts'].values()[0]
-        source_obj = self.get_source(action['source'], opts)
-        source_image = self.build_source(source_obj)
-        if not source_image:
-            return {}
-        images = {}
-        for output_target, opts in action['all_opts'].items():
-            image = source_image
-            for processor in self.get_processors():
-                image = processor(image, **opts)
-            output_file = self.write_image(
-                image, output_target, destination=None, **opts)
-            self.save(output_target, output_file, opts)
-            images[output_target] = image
-        return images
-
     def build_source(self, source_obj):
         if hasattr(source_obj, 'seek'):
             source_obj.seek(0)
@@ -59,3 +40,12 @@ class PILGenerator(output.PILOutput):
             image = utils.exif_orientation(image)
 
         return image
+
+    def process_image(self, source_image, opts):
+        image = source_image
+        for processor in self.get_processors():
+            image = processor(image, **opts)
+        return image
+
+    def is_transparent(self, image):
+        return utils.is_transparent(image)

@@ -8,10 +8,18 @@ An action looks like this::
     {
         "source": source_url_or_path,
         "ledger": current_ledger,
-        "all_opts": {
-            output_path: {'fit': (200, 0), 'KEY': '...'},
-            output_path: {'crop': (64, 64), 'upscale': True, 'KEY': '...'},
-        }
+        "opts": [
+            {
+                'fit': (200, 0),
+                'FILENAME': '...',
+                'FILENAME_TRANSPARENT': '...',
+            },
+            {
+                'crop': (64, 64),
+                'upscale': True,
+                'FILENAME': '...',
+            },
+        ]
     }
 """
 import abc
@@ -33,11 +41,28 @@ class BaseEngine(object):
         """
         return self.generate_and_record(action)
 
-    @abc.abstractmethod
     def generate(self, action):
         """
         Generate image(s) and save to storage.
         """
+        if not action.get('opts'):
+            return {}
+        opts = action['opts'][0]
+        source_file = self.get_source_file(action['source'], opts)
+        source_image = self.build_source(source_file)
+        if not source_image:
+            return {}
+        images = {}
+        for opts in action['opts']:
+            image = self.process_image(source_image, opts)
+            if 'FILENAME_TRANSPARENT' in opts and self.is_transparent(image):
+                filename = opts['FILENAME_TRANSPARENT']
+            else:
+                filename = opts['FILENAME']
+            processed_file = self.write_image(image, filename, **opts)
+            self.save(filename, processed_file, opts)
+            images[filename] = image
+        return images
 
     def generate_and_record(self, action):
         """
@@ -51,8 +76,13 @@ class BaseEngine(object):
             ledger = default_ledger
         images = self.generate(action)
         source_path = action['source']
-        for output_target, opts in action['all_opts'].items():
-            image = images.get(output_target) if images else None
+        for opts in action['opts']:
+            if images:
+                image = images.get(opts['FILENAME'])
+                if image is None and 'FILENAME_TRANSPARENT' in opts:
+                    image = images.get(opts['FILENAME_TRANSPARENT'])
+            else:
+                image = None
             self.record(source_path, opts, ledger, image)
         return images
 
@@ -64,6 +94,26 @@ class BaseEngine(object):
     def build_meta(self, image):
         """
         Build a dictionary of metadata for an image.
+        """
+
+    @abc.abstractmethod
+    def build_source(self, source_file):
+        """
+        Build the source image.
+        """
+
+    @abc.abstractmethod
+    def process_image(self, source_image, opts):
+        """
+        Process the source image using the options provided.
+        """
+
+    @abc.abstractmethod
+    def is_transparent(self, image):
+        """
+        Check whether the image is transparent.
+
+        :rtype: boolean
         """
 
     def processing(self, key, **kwargs):

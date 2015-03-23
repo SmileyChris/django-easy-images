@@ -19,10 +19,19 @@ class BaseEngineTest(TestCase):
         self.engine = TestEngine()
         self.example_action = {
             'source': 'easy_images/fake.jpg',
-            'all_opts': {
-                'easy_images/fit.jpg': {'fit': (200, 0)},
-                'easy_images/crop.jpg': {'crop': (64, 64), 'upscale': True},
-            },
+            'opts': [
+                {
+                    'fit': (200, 0),
+                    'FILENAME': 'easy_images/fit.jpg',
+                    'FILENAME_TRANSPARENT': 'easy_images/fit.png',
+                },
+                {
+                    'crop': (64, 64),
+                    'upscale': True,
+                    'FILENAME': 'easy_images/crop.jpg',
+                    'FILENAME_TRANSPARENT': 'easy_images/crop.png',
+                },
+            ],
         }
 
     def test_abc_protection(self):
