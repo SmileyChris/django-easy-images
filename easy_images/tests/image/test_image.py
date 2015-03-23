@@ -137,7 +137,7 @@ class EasyImageTest(TestCase):
     def test_get_file_exists(self):
         expected = 'somefile'
         engine = mock.Mock(
-            BaseEngine, **{'get_generated.return_value': expected})
+            BaseEngine, **{'get_generated_file.return_value': expected})
         img = self.build_image(engine=engine)
         img.meta = {}
         self.assertEqual(img.get_file(), expected)

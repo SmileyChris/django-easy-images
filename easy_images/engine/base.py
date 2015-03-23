@@ -96,7 +96,7 @@ class BaseEngine(object):
         """
         raise NotImplementedError()
 
-    def get_source(self, source, opts):
+    def get_source_file(self, source, opts):
         """
         The source file.
 
@@ -108,7 +108,7 @@ class BaseEngine(object):
         storage = self.get_source_storage(opts)
         return storage.open(source)
 
-    def get_generated(self, source_path, opts):
+    def get_generated_file(self, source_path, opts):
         """
         Get the generated file.
         """

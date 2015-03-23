@@ -16,7 +16,7 @@ class PILGeneratorTest(TestCase):
             generator.PILGenerator.default_processors)
 
     def test_generate_no_source(self):
-        self.generator.get_source = mock.Mock()
+        self.generator.get_source_file = mock.Mock()
         self.generator.build_source = mock.Mock(return_value=None)
         self.generator.generate({'source': 'test.jpg'})
         self.generator.get_source.assert_called_with('test.jpg')
@@ -31,7 +31,7 @@ class PILGeneratorTest(TestCase):
         self.generator.get_processors = mock.Mock(
             return_value=[fake_processor1, fake_processor2])
         self.generator.save = mock.Mock()
-        self.generator.get_source = mock.Mock()
+        self.generator.get_source_file = mock.Mock()
         self.generator.build_source = mock.Mock()
         # Now do it!
         opts = {'crop': (32, 32)}
@@ -44,7 +44,7 @@ class PILGeneratorTest(TestCase):
             }
         })
 
-        source_obj = self.generator.get_source('test.jpg')
+        source_obj = self.generator.get_source_file('test.jpg')
         self.generator.build_source.assert_called_with(source_obj)
         source_image = self.generator.build_source(source_obj)
         self.assertEqual(

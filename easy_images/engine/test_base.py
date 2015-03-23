@@ -56,20 +56,21 @@ class BaseEngineTest(TestCase):
             source_path='test.jpg', opts={'fit': (100, 100)},
             source_url='source.jpg')
 
-    def test_get_source(self):
+    def test_get_source_file(self):
         file_obj = mock.Mock(file)
-        self.assertEqual(self.engine.get_source(file_obj, opts={}), file_obj)
+        self.assertEqual(self.engine.get_source_file(
+            file_obj, opts={}), file_obj)
         expected = 'fakefile'
         mock_storage = mock.Mock(**{'open.return_value': expected})
         self.engine.get_source_storage = mock.Mock(return_value=mock_storage)
         self.assertEqual(
-            self.engine.get_source('some_path', opts={}), expected)
+            self.engine.get_source_file('some_path', opts={}), expected)
 
-    def test_get_generated(self):
+    def test_get_generated_file(self):
         fake_storage = mock.Mock()
         self.engine.get_generated_storage = mock.Mock(
             return_value=fake_storage)
-        self.engine.get_generated(
+        self.engine.get_generated_file(
             source_path='test.jpg', opts={'fit': (100, 100)})
         self.assertTrue(fake_storage.open.called)
 
