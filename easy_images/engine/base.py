@@ -49,7 +49,6 @@ class BaseEngine(object):
             ledger = import_string(ledger)()
         else:
             ledger = default_ledger
-
         images = self.generate(action)
         source_path = action['source']
         for output_target, opts in action['all_opts'].items():
@@ -58,8 +57,6 @@ class BaseEngine(object):
         return images
 
     def record(self, source_path, opts, ledger, image):
-        if not opts.get('KEY'):
-            return
         meta = self.build_meta(image)
         return ledger.save(source_path, opts, meta)
 

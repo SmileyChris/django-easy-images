@@ -196,13 +196,13 @@ class EasyImageBatch(object):
             # Exclude self.engine.processing_list items from meta_list.
             processing_list = self.engine.processing_list(
                 image.hash for image in loading_images)
-            meta_sources = []
             meta_images = []
             for image, processing in zip(loading_images, processing_list):
                 if not processing:
-                    meta_sources.append((image.source, image.opts))
                     meta_images.append(image)
-            if meta_sources:
+            if meta_images:
+                meta_sources = [
+                    (image.source, image.opts) for image in meta_images]
                 meta_list = self.ledger.meta_list(meta_sources)
                 for image, meta in zip(meta_images, meta_list):
                     image.meta = meta
@@ -238,14 +238,24 @@ class EasyImageBatch(object):
             processing_list = self.engine.processing_list(
                 image.hash for image in images)
         actions = {}
+        new = []
         for image, processing in zip(images, processing_list):
             if not force:
                 if processing or image.meta is not None:
                     continue
             all_opts = actions.setdefault(image.source_path, {})
             all_opts[image.name] = image.opts
+            new.append(image)
+        generated = False
         for source_path, all_opts in six.iteritems(actions):
-            self.engine.add({'source': source_path, 'all_opts': all_opts})
+            if self.engine.add({'source': source_path, 'all_opts': all_opts}):
+                generated = True
+        if generated:
+            # Populate the metadata for newly generated images.
+            new_sources = [[image.source_path, image.opts] for image in new]
+            new_meta = self.ledger.meta_list(new_sources)
+            for image, meta in zip(new, new_meta):
+                image.meta = meta
 
 
 def annotate(obj_list, opts_map, get_source, batch=None):
