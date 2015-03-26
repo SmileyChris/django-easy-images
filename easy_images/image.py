@@ -166,7 +166,9 @@ class EasyImage(object):
             opts = {'KEY': self.hash}
             opts.update(self.opts)
         action = build_action(self.source_path, [self.opts], self.ledger)
-        return self.engine.add(action)
+        processed_images = self.engine.add(action)
+        if processed_images:
+            return processed_images[0]
 
 
 class EasyImageBatch(object):
@@ -258,25 +260,19 @@ class EasyImageBatch(object):
             processing_list = self.engine.processing_list(
                 image.hash for image in images)
         actions = {}
-        new = []
         for image, processing in zip(images, processing_list):
             if not force:
                 if processing or image.meta is not None:
                     continue
-            opts = actions.setdefault(image.source_path, [])
-            opts.append(image.opts)
-            new.append(image)
-        generated = False
-        for source_path, opts in six.iteritems(actions):
+            new_images = actions.setdefault(image.source_path, [])
+            new_images.append(image)
+        for source_path, new_images in six.iteritems(actions):
+            opts = [image.opts for image in new_images]
             action = build_action(source_path, opts, self.ledger)
-            if self.engine.add(action):
-                generated = True
-        if generated:
-            # Populate the metadata for newly generated images.
-            new_sources = [[image.source_path, image.opts] for image in new]
-            new_meta = self.ledger.meta_list(new_sources)
-            for image, meta in zip(new, new_meta):
-                image.meta = meta
+            processed_images = self.engine.add(action)
+            if processed_images and len(processed_images) == len(new_images):
+                for image, image_obj in zip(new_images, processed_images):
+                    image.meta = self.engine.build_meta(image_obj)
 
 
 def annotate(obj_list, opts_map, get_source, batch=None):

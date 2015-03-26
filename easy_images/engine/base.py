@@ -52,22 +52,27 @@ class BaseEngine(object):
         source_image = self.build_source(source_file)
         if not source_image:
             return {}
-        images = {}
+        images = []
         for opts in action['opts']:
             image = self.process_image(source_image, opts)
             if 'FILENAME_TRANSPARENT' in opts and self.is_transparent(image):
                 filename = opts['FILENAME_TRANSPARENT']
             else:
                 filename = opts['FILENAME']
+            # Create a bytestream of the processed image object saved in the
+            # correct format.
             processed_file = self.write_image(image, filename, **opts)
+            # Save to storage.
             self.save(filename, processed_file, opts)
-            images[filename] = image
+            images.append(image)
         return images
 
     def generate_and_record(self, action):
         """
         Generate processed images, save them to storage, then record the change
         in the ledger.
+
+        :returns: list of processed image objects
         """
         ledger = action.get('ledger')
         if ledger:
@@ -76,19 +81,11 @@ class BaseEngine(object):
             ledger = default_ledger
         images = self.generate(action)
         source_path = action['source']
-        for opts in action['opts']:
-            if images:
-                image = images.get(opts['FILENAME'])
-                if image is None and 'FILENAME_TRANSPARENT' in opts:
-                    image = images.get(opts['FILENAME_TRANSPARENT'])
-            else:
-                image = None
-            self.record(source_path, opts, ledger, image)
+        for i, opts in enumerate(action['opts']):
+            image = images and images[i] or None
+            meta = self.build_meta(image)
+            ledger.save(source_path, opts, meta)
         return images
-
-    def record(self, source_path, opts, ledger, image):
-        meta = self.build_meta(image)
-        return ledger.save(source_path, opts, meta)
 
     @abc.abstractmethod
     def build_meta(self, image):
