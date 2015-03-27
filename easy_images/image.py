@@ -143,7 +143,7 @@ class EasyImage(object):
     def get_file(self):
         if not self.exists:
             return None
-        return self.engine.get_generated(
+        return self.engine.get_generated_file(
             source_path=self.source_path, opts=self.opts)
 
     @property
