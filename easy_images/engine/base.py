@@ -10,14 +10,16 @@ An action looks like this::
         "ledger": current_ledger,
         "opts": [
             {
-                'fit': (200, 0),
+                'KEY': 'hash',
                 'FILENAME': '...',
                 'FILENAME_TRANSPARENT': '...',
+                'fit': (200, 0),
             },
             {
+                'KEY': 'hash',
+                'FILENAME': '...',
                 'crop': (64, 64),
                 'upscale': True,
-                'FILENAME': '...',
             },
         ]
     }

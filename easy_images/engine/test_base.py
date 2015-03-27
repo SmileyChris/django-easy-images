@@ -21,15 +21,17 @@ class BaseEngineTest(TestCase):
             'source': 'easy_images/fake.jpg',
             'opts': [
                 {
-                    'fit': (200, 0),
+                    'KEY': 'fit_key',
                     'FILENAME': 'easy_images/fit.jpg',
                     'FILENAME_TRANSPARENT': 'easy_images/fit.png',
+                    'fit': (200, 0),
                 },
                 {
-                    'crop': (64, 64),
-                    'upscale': True,
+                    'KEY': 'crop_key',
                     'FILENAME': 'easy_images/crop.jpg',
                     'FILENAME_TRANSPARENT': 'easy_images/crop.png',
+                    'crop': (64, 64),
+                    'upscale': True,
                 },
             ],
         }

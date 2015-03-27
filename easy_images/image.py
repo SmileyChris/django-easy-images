@@ -12,8 +12,11 @@ def build_action(source_path, opts_list, ledger):
             ledger.__module__, ledger.__class__.__name__)
     # Add filenames.
     for opts in opts_list:
-        if 'FILENAME' not in opts:
+        if 'KEY' not in opts or 'FILENAME' not in opts:
             opts = dict(opts)
+        if 'KEY' not in opts:
+            opts['KEY'] = ledger.get_filename_info(source_path, opts).hash
+        if 'FILENAME' not in opts:
             opaque_ext = ledger.output_extension({'transparent': False})
             opts['FILENAME'] = ledger.build_filename(
                 source_path, opts, processed_ext=opaque_ext)
