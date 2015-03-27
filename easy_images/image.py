@@ -8,7 +8,7 @@ def build_action(source_path, opts_list, ledger):
     action = {'source': source_path, 'opts': []}
     # If not default ledger, add its Python representation into the action.
     if ledger and ledger is not default_ledger:
-        action['ledger'] = '{1}.{2}'.format(
+        action['ledger'] = '{0}.{1}'.format(
             ledger.__module__, ledger.__class__.__name__)
     # Add filenames.
     for opts in opts_list:
