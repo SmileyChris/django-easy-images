@@ -66,7 +66,3 @@ class BaseLedgerTest(TestCase):
         self.ledger.output_extension(
             meta={}, source_ext='.png', **self.ledger_kwargs)
         self.assertFalse(self.ledger.meta.called)
-
-    def test_save(self):
-        self.assertRaises(
-            NotImplementedError, self.ledger.save, **self.ledger_kwargs)
