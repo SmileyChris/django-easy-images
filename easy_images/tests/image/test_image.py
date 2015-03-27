@@ -31,8 +31,10 @@ class EasyImageTest(TestCase):
         self.assertEqual(img.name, 'output.jpg')
 
     def test_hash(self):
+        filename_info = mock.Mock()
+        filename_info.hash = 'hashhashhash'
         ledger = mock.Mock(
-            BaseLedger, **{'hash.return_value': 'hashhashhash'})
+            BaseLedger, **{'get_filename_info.return_value': filename_info})
         img = self.build_image(ledger=ledger)
         self.assertEqual(img.hash, 'hashhashhash')
 
