@@ -118,10 +118,8 @@ class CachedDBLedgerTest(TestCase):
     def test_meta(self):
         meta = {'fish': True}
         models.ProcessedImage.objects.create(pk='cdblttm')
-        fake_filename_info = mock.Mock()
-        fake_filename_info.hash = 'cdblttm'
         self.ledger.get_filename_info = mock.Mock(
-            return_value=fake_filename_info)
+            return_value=mock.Mock(hash='cdblttm'))
         patch_model = mock.patch.object(
             models.ProcessedImage, 'meta_json', new_callable=mock.PropertyMock)
         with patch_model as mocked_meta_json:
@@ -145,13 +143,10 @@ class CachedDBLedgerTest(TestCase):
             models.ProcessedImage(pk='cdblt4.jpg', meta='TEST3'),
         ])
 
-        def make_filename_info(*args):
-            filename_info = mock.Mock()
-            filename_info.hash = args[0]
-            return filename_info
+        def filename_info(*args):
+            return mock.Mock(hash=args[0])
 
-        self.ledger.get_filename_info = mock.Mock(
-            side_effect=make_filename_info)
+        self.ledger.get_filename_info = mock.Mock(side_effect=filename_info)
 
         opts = {'fit': (100, 100)}
         sources = [
@@ -177,10 +172,8 @@ class CachedDBLedgerTest(TestCase):
             self.assertEqual(mock_meta_json.call_count, 0)
 
     def test_save(self):
-        fake_filename_info = mock.Mock()
-        fake_filename_info.hash = 'cdbltts'
         self.ledger.get_filename_info = mock.Mock(
-            return_value=fake_filename_info)
+            return_value=mock.Mock(hash='cdbltts'))
         patch_image_cache = mock.patch(
             'easy_images_db_ledger.ledger.image_cache')
         with patch_image_cache as mock_image_cache:
