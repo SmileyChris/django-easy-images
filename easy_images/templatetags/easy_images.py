@@ -60,9 +60,10 @@ def _build_opts(args, parser):
             str_value = ''
         if not value:
             continue
-        dimensions = re_dimensions.match(str_value)
-        if dimensions:
-            value = [int(part) for part in dimensions.groups()]
+        if isinstance(value, six.string_types):
+            dimensions = re_dimensions.match(str_value)
+            if dimensions:
+                value = [int(part) for part in dimensions.groups()]
         yield key, value
 
 
