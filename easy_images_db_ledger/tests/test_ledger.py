@@ -118,7 +118,10 @@ class CachedDBLedgerTest(TestCase):
     def test_meta(self):
         meta = {'fish': True}
         models.ProcessedImage.objects.create(pk='cdblttm')
-        self.ledger.hash = mock.Mock(return_value='cdblttm')
+        fake_filename_info = mock.Mock()
+        fake_filename_info.hash = 'cdblttm'
+        self.ledger.get_filename_info = mock.Mock(
+            return_value=fake_filename_info)
         patch_model = mock.patch.object(
             models.ProcessedImage, 'meta_json', new_callable=mock.PropertyMock)
         with patch_model as mocked_meta_json:
@@ -141,10 +144,16 @@ class CachedDBLedgerTest(TestCase):
             models.ProcessedImage(pk='cdblt3.jpg', meta='TEST2'),
             models.ProcessedImage(pk='cdblt4.jpg', meta='TEST3'),
         ])
+
+        def make_filename_info(*args):
+            filename_info = mock.Mock()
+            filename_info.hash = args[0]
+            return filename_info
+
+        self.ledger.get_filename_info = mock.Mock(
+            side_effect=make_filename_info)
+
         opts = {'fit': (100, 100)}
-        sources = [
-            ('cdblt1.jpg', opts), ('cdblt2.jpg', opts), ('cdblt3.jpg', opts)]
-        self.ledger.hash = mock.Mock(side_effect=lambda *args: args[0])
         sources = [
             ('cdblt1.jpg', opts), ('cdblt2.jpg', opts), ('cdblt3.jpg', opts)]
         expected = [{'example': 'TEST1'}, None, {'example': 'TEST2'}]
@@ -168,7 +177,10 @@ class CachedDBLedgerTest(TestCase):
             self.assertEqual(mock_meta_json.call_count, 0)
 
     def test_save(self):
-        self.ledger.hash = mock.Mock(return_value='cdbltts')
+        fake_filename_info = mock.Mock()
+        fake_filename_info.hash = 'cdbltts'
+        self.ledger.get_filename_info = mock.Mock(
+            return_value=fake_filename_info)
         patch_image_cache = mock.patch(
             'easy_images_db_ledger.ledger.image_cache')
         with patch_image_cache as mock_image_cache:
@@ -177,6 +189,6 @@ class CachedDBLedgerTest(TestCase):
                 meta={'size': (100, 120)})
             mock_image_cache.set.assert_called_with(
                 'cdbltts', {'size': (100, 120)}, timeout=None)
-        self.assertEqual(self.ledger.hash.call_count, 1)
+        self.assertEqual(self.ledger.get_filename_info.call_count, 1)
         obj = models.ProcessedImage.objects.get()
         self.assertEqual(output, obj)
