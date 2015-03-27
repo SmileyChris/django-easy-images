@@ -24,10 +24,6 @@ class BaseLedgerTest(TestCase):
         meta = self.ledger.meta(**self.ledger_kwargs)
         self.assertEqual(meta, {})
 
-    def test_hash(self):
-        ledger_hash = self.ledger.hash(**self.ledger_kwargs)
-        self.assertEqual(ledger_hash, 'ahash')
-
     def test_meta_list(self):
         self.ledger.meta = mock.Mock(return_value={})
         opts = {'fit': (128, 128)}
