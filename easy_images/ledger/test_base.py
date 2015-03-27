@@ -50,15 +50,11 @@ class BaseLedgerTest(TestCase):
         self.assertEqual(filename, 'ahash.ext')
 
     def test_output_extension(self):
-        self.ledger.meta = mock.Mock(return_value={})
-        ext = self.ledger.output_extension(
-            source_ext='.png', **self.ledger_kwargs)
+        ext = self.ledger.output_extension(meta={})
         self.assertEqual(ext, '.jpg')
 
     def test_output_extension_transparent(self):
-        self.ledger.meta = mock.Mock(return_value={'transparent': True})
-        ext = self.ledger.output_extension(
-            source_ext='.png', **self.ledger_kwargs)
+        ext = self.ledger.output_extension(meta={'transparent': True})
         self.assertEqual(ext, '.png')
 
     def test_output_extension_passed_meta(self):
