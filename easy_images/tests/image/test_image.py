@@ -18,7 +18,8 @@ class EasyImageTest(TestCase):
             kwargs['ledger'] = mock.Mock(
                 BaseLedger, **{'meta.return_value': None})
         if 'engine' not in kwargs:
-            kwargs['engine'] = mock.Mock(BaseEngine)
+            kwargs['engine'] = mock.Mock(
+                BaseEngine, **{'add.return_value': []})
         processing = kwargs.pop('is_processing', False)
         kwargs['engine'].configure_mock(
             **{'processing.return_value': processing})
@@ -157,26 +158,26 @@ class EasyImageTest(TestCase):
 
     def test_generate(self):
         img = self.build_image()
-        self.assertTrue(isinstance(img.generate(), mock.Mock))
+        img.generate()
         self.assertTrue(img.engine.add.called)
         action = img.engine.add.call_args[0][0]
-        self.assertIn('KEY', action['all_opts'].values()[0])
+        self.assertIn('KEY', action['opts'][0])
 
     def test_generate_exists(self):
         img = self.build_image()
-        img.meta = {}
+        img.meta = {}   # Setting meta to non-None means the image exists.
         self.assertEqual(img.generate(), True)
         self.assertFalse(img.engine.add.called)
 
     def test_generate_force(self):
         img = self.build_image()
-        self.assertTrue(isinstance(img.generate(force=True), mock.Mock))
+        img.generate(force=True)
         self.assertTrue(img.engine.add.called)
 
     def test_generate_force_exists(self):
         img = self.build_image()
-        img.meta = {}
-        self.assertTrue(isinstance(img.generate(force=True), mock.Mock))
+        img.meta = {}   # Setting meta to non-None means the image exists.
+        img.generate(force=True)
         self.assertTrue(img.engine.add.called)
 
     def test_generate_existing_key(self):
@@ -184,4 +185,4 @@ class EasyImageTest(TestCase):
         img.generate()
         self.assertTrue(img.engine.add.called)
         action = img.engine.add.call_args[0][0]
-        self.assertEqual(action['all_opts'].values()[0].get('KEY'), 'abcde')
+        self.assertEqual(action['opts'][0].get('KEY'), 'abcde')
