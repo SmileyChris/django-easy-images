@@ -49,24 +49,6 @@ class BaseQueueTest(TestCase):
         self.assertEqual(self.queue.start_processing.call_count, 1)
         self.assertEqual(self.queue.finished_processing.call_count, 1)
 
-    def test_add_to_queue(self):
-        self.assertRaises(
-            NotImplementedError, self.queue.add_to_queue,
-            action=self.example_action)
-
-    def test_processing(self):
-        # It makes sense that a subclass of Queue has to override this, so it
-        # raises a NotImplemented error.
-        self.assertRaises(
-            NotImplementedError, self.queue.processing, key='1234')
-
-    def test_start_processing(self):
-        # The subclass of a queue should definitely do something, and this is
-        # the main entry point.
-        self.assertRaises(
-            NotImplementedError, self.queue.start_processing,
-            action=self.example_action)
-
     def test_finished_processing(self):
         self.queue.finished_processing(action=self.example_action)
 
