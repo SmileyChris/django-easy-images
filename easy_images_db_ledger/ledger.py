@@ -1,5 +1,6 @@
 import json
 
+from django.db import IntegrityError
 from django.utils import six
 from easy_images.cache import image_cache
 from easy_images.ledger.base import BaseLedger
@@ -46,15 +47,24 @@ class DBLedger(BaseLedger):
         """
         Save a reference of a processed image to the database.
         """
-        image_hash = kwargs.get('image_hash')
-        if image_hash is None:
-            image_hash = self.get_filename_info(source_path, opts).hash
+        filename_info = kwargs.get('filename_info')
+        if filename_info is None:
+            filename_info = self.get_filename_info(source_path, opts)
+
         # Remove date from meta because it is saved separately on the
         # ProcessedImage model.
         meta.pop('date', None)
         meta_text = json.dumps(meta)
-        image = models.ProcessedImage(pk=image_hash, meta=meta_text)
-        image.save()
+        image = models.ProcessedImage(
+            pk=filename_info.hash, meta=meta_text,
+            opts_hash=filename_info.opts_hash,
+            src_hash=filename_info.src_hash)
+        try:
+            image.save(force_insert=True)
+        except IntegrityError:
+            # The more unlikely case that the hash already exists, we'll
+            # standard save it to update the row instead.
+            image.save(force_insert=True)
         return image
 
 
@@ -99,10 +109,10 @@ class CachedDBLedger(DBLedger):
         return meta_list
 
     def save(self, source_path, opts, meta, **kwargs):
-        image_hash = kwargs.get('image_hash')
-        if image_hash is None:
-            image_hash = self.get_filename_info(source_path, opts).hash
-        image_cache.set(image_hash, meta, timeout=None)
-        kwargs['image_hash'] = image_hash
+        filename_info = kwargs.get('filename_info')
+        if filename_info is None:
+            filename_info = self.get_filename_info(source_path, opts)
+        image_cache.set(filename_info.hash, meta, timeout=None)
+        kwargs['filename_info'] = filename_info
         return super(CachedDBLedger, self).save(
             source_path=source_path, opts=opts, meta=meta, **kwargs)
