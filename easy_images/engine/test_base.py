@@ -9,8 +9,20 @@ from . import base
 
 class TestEngine(base.BaseEngine):
 
-    def generate(self, *args, **kwargs):
-        return 'ok, generated'
+    # def generate(self, *args, **kwargs):
+    #     return 'ok, generated'
+
+    def build_meta(self, *args, **kwargs):
+        return {}
+
+    def build_source(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def is_transparent(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def process_image(self, *args, **kwargs):
+        raise NotImplementedError
 
 
 class BaseEngineTest(TestCase):
