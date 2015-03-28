@@ -52,16 +52,16 @@ class BaseEngineTest(TestCase):
         self.assertRaises(TypeError, base.BaseEngine)
 
     def test_add(self):
-        self.engine.generate = mock.Mock()
+        self.engine.generate = mock.Mock(return_value=None)
         self.engine.add(self.example_action)
         self.engine.generate.assert_called_once_with(self.example_action)
 
     def test_generate_and_record(self):
-        self.engine.generate = mock.Mock()
-        self.engine.record = mock.Mock()
-        self.engine.generate_and_record(action=self.example_action)
-        self.assertEqual(self.engine.generate.call_count, 1)
-        self.assertEqual(self.engine.record.call_count, 2)
+        self.engine.generate = mock.Mock(return_value=None)
+        with mock.patch.object(base.default_ledger, 'save') as ledger_save:
+            self.engine.generate_and_record(action=self.example_action)
+            self.assertEqual(self.engine.generate.call_count, 1)
+            self.assertEqual(ledger_save.call_count, 2)
 
     def test_processing(self):
         self.assertFalse(self.engine.processing('hashhashhash'))
@@ -111,31 +111,5 @@ class BaseEngineTest(TestCase):
         fake_storage = mock.Mock()
         self.engine.get_generated_storage = mock.Mock(
             return_value=fake_storage)
-        self.engine.save('test.jpg', object())
+        self.engine.save('test.jpg', object(), {})
         self.assertTrue(fake_storage.save.called)
-
-
-class BaseEngineRecordTest(TestCase):
-
-    def setUp(self):
-        self.engine = TestEngine()
-        self.real_default_ledger = base.default_ledger
-        base.default_ledger = mock.Mock()
-
-    def tearDown(self):
-        base.default_ledger = self.real_default_ledger
-
-    def test_record_no_key(self):
-        self.engine.record('source.jpg', {'fit': (200, 0)})
-        self.assertFalse(base.default_ledger.save.called)
-
-    def test_record(self):
-        self.engine.record('source.jpg', {'fit': (200, 0), 'KEY': 'abc'})
-        self.assertTrue(base.default_ledger.save.called)
-
-    def test_record_alt_ledger(self):
-        alt_ledger = mock.Mock()
-        self.engine.record(
-            'source.jpg', {'fit': (200, 0), 'KEY': 'abc'}, ledger=alt_ledger)
-        self.assertFalse(base.default_ledger.save.called)
-        self.assertTrue(alt_ledger.save.called)
