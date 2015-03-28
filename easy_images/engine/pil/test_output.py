@@ -7,32 +7,32 @@ from .output import PILOutput, BytesIO
 
 class OutputTest(TestCase):
 
-    def test_save_jpg(self):
+    def test_write_image_jpg(self):
         image = mock.Mock()
         image.size = (128, 128)
-        destination = PILOutput().save(image, 'test.jpg')
+        destination = PILOutput().write_image(image, 'test.jpg')
         self.assertTrue(isinstance(destination, BytesIO))
         self.assertEqual(image.save.call_count, 1)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, progressive=True,
             quality=85)
 
-    def test_save_small_jpg(self):
+    def test_write_image_small_jpg(self):
         image = mock.Mock()
         image.size = (32, 32)
-        destination = PILOutput().save(image, 'test.jpg')
+        destination = PILOutput().write_image(image, 'test.jpg')
         self.assertTrue(isinstance(destination, BytesIO))
         self.assertEqual(image.save.call_count, 1)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, quality=85)
 
-    def test_save_large_jpg(self):
+    def test_write_image_large_jpg(self):
         image = mock.Mock()
         image.size = (10000, 10000)
         # Fake the initial saving failing due to MAXBLOCK size.
         image.save.side_effect = [IOError, None]
 
-        destination = PILOutput().save(image, 'test.jpg')
+        destination = PILOutput().write_image(image, 'test.jpg')
         self.assertTrue(isinstance(destination, BytesIO))
         self.assertEqual(image.save.call_count, 2)
         self.assertEqual(
@@ -45,9 +45,9 @@ class OutputTest(TestCase):
                     destination, format='JPEG', quality=85, progressive=True),
             ])
 
-    def test_save_png(self):
+    def test_write_image_png(self):
         image = mock.Mock()
-        destination = PILOutput().save(image, 'test.png')
+        destination = PILOutput().write_image(image, 'test.png')
         self.assertTrue(isinstance(destination, BytesIO))
         self.assertEqual(image.save.call_count, 1)
         image.save.assert_called_once_with(destination, format='PNG')
