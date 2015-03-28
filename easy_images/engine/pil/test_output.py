@@ -59,7 +59,8 @@ class TestProgressive(TestCase):
         image = mock.Mock()
         image.size = (12, 12)
 
-        destination = PILOutput().save(image, 'test.jpg', progressive=True)
+        destination = PILOutput().write_image(
+            image, 'test.jpg', progressive=True)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, progressive=True,
             quality=85)
@@ -68,7 +69,8 @@ class TestProgressive(TestCase):
         image = mock.Mock()
         image.size = (1200, 1200)
 
-        destination = PILOutput().save(image, 'test.jpg', progressive=False)
+        destination = PILOutput().write_image(
+            image, 'test.jpg', progressive=False)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, quality=85)
 
@@ -76,11 +78,13 @@ class TestProgressive(TestCase):
         image = mock.Mock()
         image.size = (12, 12)
 
-        destination = PILOutput().save(image, 'test.jpg', progressive=10)
+        destination = PILOutput().write_image(
+            image, 'test.jpg', progressive=10)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, progressive=True,
             quality=85)
 
-        destination = PILOutput().save(image, 'test.jpg', progressive=15)
+        destination = PILOutput().write_image(
+            image, 'test.jpg', progressive=15)
         image.save.assert_called_with(
             destination, format='JPEG', optimize=1, quality=85)
