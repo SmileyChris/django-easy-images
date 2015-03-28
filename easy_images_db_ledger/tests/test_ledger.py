@@ -3,6 +3,7 @@ import mock
 
 import easy_images_db_ledger
 from easy_images_db_ledger import models
+from easy_images.ledger.filename_info import FilenameInfo
 
 
 class DBLedgerTest(TestCase):
@@ -14,7 +15,7 @@ class DBLedgerTest(TestCase):
         meta = {'fish': True}
         models.ProcessedImage.objects.create(pk='abcd')
         self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='abcd'))
+            return_value=mock.Mock(FilenameInfo, hash='abcd'))
         patch_model = mock.patch.object(
             models.ProcessedImage, 'meta_json', new_callable=mock.PropertyMock)
         with patch_model as mocked_model:
@@ -40,7 +41,7 @@ class DBLedgerTest(TestCase):
     def test_meta_missing(self):
         models.ProcessedImage.objects.create(pk='efgh')
         self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='abcd'))
+            return_value=mock.Mock(FilenameInfo, hash='abcd'))
         output = self.ledger.meta(
             source_path='test.jpg', opts={'fit': (100, 100)})
         self.assertEqual(output, None)
@@ -62,7 +63,7 @@ class DBLedgerTest(TestCase):
         sources = [
             ('test1.jpg', opts), ('test2.jpg', opts), ('test3.jpg', opts)]
         self.ledger.get_filename_info = mock.Mock(
-            side_effect=lambda *args: mock.Mock(hash=args[0]))
+            side_effect=lambda *args: mock.Mock(FilenameInfo, hash=args[0]))
         with mock.patch.object(
                 models, 'meta_json',
                 side_effect=lambda *args: {'example': args[0]}):
@@ -78,19 +79,19 @@ class DBLedgerTest(TestCase):
         opts = {'fit': (100, 100)}
         sources = [
             ('test1.jpg', opts), ('test2.jpg', opts), ('test3.jpg', opts)]
-        self.ledger.hash = mock.Mock()
+        self.ledger.get_filename_info = mock.Mock()
         with mock.patch.object(
                 models, 'meta_json',
                 side_effect=lambda *args: {'example': args[0]}):
             output = self.ledger.meta_list(
                 sources=sources, hashes=['abcd', 'efgh', 'ijkl'])
-        self.assertFalse(self.ledger.hash.called)
+        self.assertFalse(self.ledger.get_filename_info.called)
         self.assertEqual(
             output, [{'example': 'TEST1'}, {'example': 'TEST2'}, None])
 
     def test_save(self):
         self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='abcd'))
+            return_value=mock.Mock(FilenameInfo, hash='abcd'))
         self.ledger.save('test.jpg', {'fit': (32, 32)}, {'size': (32, 32)})
         processed_image = models.ProcessedImage.objects.get()
         self.assertEqual(processed_image.pk, 'abcd')
@@ -104,8 +105,9 @@ class DBLedgerTest(TestCase):
             models.ProcessedImage(pk='dblttso'),
             models.ProcessedImage(pk='dblttso2'),
         ])
-        self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='dblttso'))
+        self.ledger.get_filename_info = mock.Mock(return_value=mock.Mock(
+            FilenameInfo, hash='dblttso', opts_hash='optshash',
+            src_hash='srchash'))
         self.ledger.save('test.jpg', {'fit': (32, 32)}, {'size': (32, 32)})
         self.assertEqual(models.ProcessedImage.objects.count(), 2)
         processed_image = models.ProcessedImage.objects.get(pk='dblttso')
@@ -124,7 +126,7 @@ class CachedDBLedgerTest(TestCase):
         meta = {'fish': True}
         models.ProcessedImage.objects.create(pk='cdblttm')
         self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='cdblttm'))
+            return_value=mock.Mock(FilenameInfo, hash='cdblttm'))
         patch_model = mock.patch.object(
             models.ProcessedImage, 'meta_json', new_callable=mock.PropertyMock)
         with patch_model as mocked_meta_json:
@@ -149,7 +151,7 @@ class CachedDBLedgerTest(TestCase):
         ])
 
         def filename_info(*args):
-            return mock.Mock(hash=args[0])
+            return mock.Mock(FilenameInfo, hash=args[0])
 
         self.ledger.get_filename_info = mock.Mock(side_effect=filename_info)
 
@@ -178,7 +180,7 @@ class CachedDBLedgerTest(TestCase):
 
     def test_save(self):
         self.ledger.get_filename_info = mock.Mock(
-            return_value=mock.Mock(hash='cdbltts'))
+            return_value=mock.Mock(FilenameInfo, hash='cdbltts'))
         patch_image_cache = mock.patch(
             'easy_images_db_ledger.ledger.image_cache')
         with patch_image_cache as mock_image_cache:

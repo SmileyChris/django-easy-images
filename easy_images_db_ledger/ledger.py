@@ -1,6 +1,6 @@
 import json
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import six
 from easy_images.cache import image_cache
 from easy_images.ledger.base import BaseLedger
@@ -60,11 +60,12 @@ class DBLedger(BaseLedger):
             opts_hash=filename_info.opts_hash,
             src_hash=filename_info.src_hash)
         try:
-            image.save(force_insert=True)
+            with transaction.atomic():
+                image.save(force_insert=True)
         except IntegrityError:
             # The more unlikely case that the hash already exists, we'll
             # standard save it to update the row instead.
-            image.save(force_insert=True)
+            image.save()
         return image
 
 
