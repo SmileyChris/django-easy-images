@@ -15,53 +15,26 @@ class PILGeneratorTest(TestCase):
             self.generator.get_processors(),
             generator.PILGenerator.default_processors)
 
-    def test_generate_no_source(self):
-        self.generator.get_source_file = mock.Mock()
-        self.generator.build_source = mock.Mock(return_value=None)
-        self.generator.generate({'source': 'test.jpg'})
-        self.generator.get_source.assert_called_with('test.jpg')
-        source = self.generator.get_source('test.jpg')
-        self.generator.build_source.assert_called_with(source)
-
-    def test_generate(self):
-        # A bunch of mocks to set up...
+    def test_process_image(self):
         passthrough = lambda image, **opts: image
         fake_processor1 = mock.Mock(side_effect=passthrough)
         fake_processor2 = mock.Mock(side_effect=passthrough)
         self.generator.get_processors = mock.Mock(
             return_value=[fake_processor1, fake_processor2])
-        self.generator.save = mock.Mock()
-        self.generator.get_source_file = mock.Mock()
-        self.generator.build_source = mock.Mock()
-        # Now do it!
-        opts = {'crop': (32, 32)}
-        opts2 = {'fit': (128, 128)}
-        output = self.generator.generate({
-            'source': 'test.jpg',
-            'all_opts': {
-                'output1.jpg': opts,
-                'output2.jpg': opts2,
-            }
-        })
 
-        source_obj = self.generator.get_source_file('test.jpg')
-        self.generator.build_source.assert_called_with(source_obj)
-        source_image = self.generator.build_source(source_obj)
+        opts = {'crop': (32, 32)}
+        image = mock.Mock()
+        output = self.generator.process_image(image, opts)
+
         self.assertEqual(
             fake_processor1.mock_calls,
-            [mock.call(source_image, **opts), mock.call(source_image, **opts2)]
+            [mock.call(image, **opts)]
         )
         self.assertEqual(
             fake_processor2.mock_calls,
-            [mock.call(source_image, **opts), mock.call(source_image, **opts2)]
+            [mock.call(image, **opts)]
         )
-        self.assertEqual(
-            self.generator.save.mock_calls,
-            [
-                mock.call(source_image, 'output1.jpg', opts),
-                mock.call(source_image, 'output2.jpg', opts2),
-            ])
-        self.assertEqual(output, [source_image, source_image])
+        self.assertEqual(output, image)
 
     def test_build_source(self):
         fake_source = object()
