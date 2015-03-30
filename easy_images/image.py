@@ -255,7 +255,6 @@ class EasyImageBatch(object):
         :param force: Force the generation, even if images exist already (or
             are being processed).
         """
-        self.load()
         images = list(self)
         if force:
             processing_list = images

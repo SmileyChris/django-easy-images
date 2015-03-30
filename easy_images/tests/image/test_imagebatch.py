@@ -38,20 +38,28 @@ class EasyImageBatchTest(TestCase):
         # Check that the ledger and engine were set from the batch.
         self.assertEqual(img.engine, 'E')
 
+    def create_mock_images(self, count, **kwargs):
+        opts = {'crop': (64, 64)}
+        images = []
+        for i in range(count):
+            image = mock.Mock(easy_images.image.EasyImage)
+            image.source, image.opts = 'a/test.jpg', opts
+            image.source_path = image.source
+            for attr, value in kwargs.items():
+                setattr(image, attr, value)
+            images.append(image)
+        return images
+
     def test_iter(self):
         # Set up.
-        opts = {'crop': (64, 64)}
-        mock_image1 = mock.Mock(easy_images.image.EasyImage)
-        mock_image1.source, mock_image1.opts = 'a/1.jpg', opts
-        mock_image2 = mock.Mock(easy_images.image.EasyImage)
-        mock_image2.source, mock_image2.opts = 'b/2.jpg', opts
-        mock_ledger = mock.Mock(
-            BaseLedger, **{
-                'meta_list.return_value': [{}],
-                'meta.return_value': None,
-            })
-        mock_engine = mock.Mock(
-            BaseEngine, **{'processing_list.return_value': [True, False]})
+        mock_image1, mock_image2 = self.create_mock_images(2)
+
+        mock_ledger = mock.Mock(BaseLedger)
+        mock_ledger.meta_list.return_value = [{}]
+        mock_ledger.meta.return_value = None
+
+        mock_engine = mock.Mock(BaseEngine)
+        mock_engine.processing_list.return_value = [True, False]
 
         batch = easy_images.image.EasyImageBatch(
             ledger=mock_ledger, engine=mock_engine)
@@ -68,3 +76,73 @@ class EasyImageBatchTest(TestCase):
         # set.
         self.assertTrue(isinstance(mock_image1.meta, mock.Mock))
         self.assertEqual(mock_image2.meta, {})
+
+    @mock.patch.object(easy_images.image.EasyImageBatch, '__iter__')
+    def test_load(self, mock_method):
+        batch = easy_images.image.EasyImageBatch()
+        batch.new_images = ['img1', 'img2']
+        mock_method.return_value = iter([])
+        self.assertEqual(batch.load(), 2)
+
+    @mock.patch.object(easy_images.image.EasyImageBatch, '__iter__')
+    def test_load_empty(self, mock_method):
+        batch = easy_images.image.EasyImageBatch()
+        batch.new_images = []
+        mock_method.return_value = iter([])
+        self.assertEqual(batch.load(), 0)
+        self.assertFalse(mock_method.called)
+
+    @mock.patch.object(easy_images.image.EasyImageBatch, '__iter__')
+    def test_generate(self, mock_iter):
+        images = self.create_mock_images(4, meta=None)
+        images[1].meta = {}
+        mock_iter.return_value = iter(images)
+        mock_engine = mock.Mock(BaseEngine)
+        mock_engine.processing_list.return_value = [False, False, True, False]
+        mock_engine.add.return_value = []
+
+        batch = easy_images.image.EasyImageBatch(engine=mock_engine)
+        batch.new_images = images
+
+        with mock.patch.object(easy_images.image, 'build_action') as func:
+            func.return_value = []
+            batch.generate()
+            self.assertEqual(func.call_count, 1)
+            func.assert_called_with(
+                'a/test.jpg', [images[0].opts] * 2, batch.ledger)
+
+    @mock.patch.object(easy_images.image.EasyImageBatch, '__iter__')
+    def test_generate_force(self, mock_iter):
+        images = self.create_mock_images(2, meta=None)
+        mock_iter.return_value = iter(images)
+        mock_engine = mock.Mock(BaseEngine)
+        mock_engine.add.return_value = []
+
+        batch = easy_images.image.EasyImageBatch(engine=mock_engine)
+        batch.new_images = images
+
+        with mock.patch.object(easy_images.image, 'build_action') as func:
+            func.return_value = []
+            batch.generate(force=True)
+            self.assertFalse(mock_engine.processing_list.called)
+
+    @mock.patch.object(easy_images.image.EasyImageBatch, '__iter__')
+    def test_generate_return(self, mock_iter):
+        images = self.create_mock_images(2, meta=None)
+        mock_iter.return_value = iter(images)
+        mock_engine = mock.Mock(BaseEngine)
+        mock_engine.processing_list.return_value = [False, False]
+        mock_engine.add.return_value = ['A', 'B']
+        mock_engine.build_meta.side_effect = lambda img: img.lower()
+
+        batch = easy_images.image.EasyImageBatch(engine=mock_engine)
+        batch.new_images = images
+
+        with mock.patch.object(easy_images.image, 'build_action') as func:
+            func.return_value = []
+            batch.generate()
+            self.assertEqual(images[0].meta, 'a')
+            self.assertEqual(images[1].meta, 'b')
+
+
+# TODO: class AnnotateTest(TestCase):
