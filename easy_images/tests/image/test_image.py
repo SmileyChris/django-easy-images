@@ -186,3 +186,10 @@ class EasyImageTest(TestCase):
         self.assertTrue(img.engine.add.called)
         action = img.engine.add.call_args[0][0]
         self.assertEqual(action['opts'][0].get('KEY'), 'abcde')
+
+    def test_generate_returns_image(self):
+        processed_image = object()
+        engine = mock.Mock(BaseEngine)
+        engine.add.return_value = [processed_image]
+        img = self.build_image(engine=engine)
+        self.assertEqual(img.generate(), processed_image)
