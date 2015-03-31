@@ -20,7 +20,7 @@ def read_files(*filenames):
 
 setup(
     name='easy-images',
-    version='1.0.alpha1',
+    version='0.1',
     url='http://github.com/SmileyChris/easy-images',
     description='Easy images for Django',
     long_description=read_files('README.rst', 'CHANGES.rst'),
