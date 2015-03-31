@@ -19,7 +19,7 @@ class Settings(AppSettings):
     EASY_IMAGES__LEDGER = 'easy_images_db_ledger.DBLedger'
     # EASY_IMAGES__LEDGER = 'easy_images_db_ledger.CachedDBLedger'
 
-    EASY_IMAGES__ENGINE = 'easy_images.engine.pil.Engine'
+    EASY_IMAGES__ENGINE = 'easy_images.engine.pil.engine.Engine'
 
     EASY_IMAGES__ALIASES = None
     """

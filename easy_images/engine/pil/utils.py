@@ -1,4 +1,9 @@
 import math
+import os
+try:
+    from cStringIO import cStringIO as BytesIO
+except ImportError:
+    from django.utils.six import BytesIO
 
 from PIL import Image
 
@@ -20,10 +25,6 @@ def is_transparent(image):
     """
     Check to see if an image is transparent.
     """
-    if not isinstance(image, Image.Image):
-        # Only deals with PIL images, fall back to the assumption that that
-        # it's not transparent.
-        return False
     return (image.mode in ('RGBA', 'LA') or
             (image.mode == 'P' and 'transparency' in image.info))
 
@@ -55,3 +56,34 @@ def exif_orientation(im):
         elif orientation == 8:
             im = im.rotate(90)
     return im
+
+
+def save(filename, im, options, destination=None):
+    if destination is None:
+        destination = BytesIO()
+    # Ensure plugins are fully loaded so that Image.EXTENSION is populated.
+    Image.init()
+    fmt = Image.EXTENSION.get(
+        os.path.splitext(filename)[1].lower(), 'JPEG')
+    if fmt in ('JPEG', 'WEBP'):
+        options.setdefault('quality', 85)
+    saved = False
+    if fmt == 'JPEG':
+        progressive = options.pop('progressive', 100)
+        if progressive:
+            if progressive is True or max(im.size) >= int(progressive):
+                options['progressive'] = True
+        try:
+            im.save(destination, format=fmt, optimize=1, **options)
+            saved = True
+        except IOError:
+            # Try again, without optimization (PIL can't optimize an image
+            # larger than ImageFile.MAXBLOCK, which is 64k by default).
+            # This shouldn't be triggered very often these days, as recent
+            # versions of pillow avoid the MAXBLOCK limitation.
+            pass
+    if not saved:
+        im.save(destination, format=fmt, **options)
+    if hasattr(destination, 'seek'):
+        destination.seek(0)
+    return destination

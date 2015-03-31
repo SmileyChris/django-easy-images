@@ -2,23 +2,22 @@ from unittest import TestCase
 
 import mock
 
-from . import generator
+from . import engine
 
 
 class PILGeneratorTest(TestCase):
 
     def setUp(self):
-        self.generator = generator.PILGenerator()
+        self.generator = engine.Engine()
 
     def test_get_processors(self):
         self.assertEqual(
             self.generator.get_processors(),
-            generator.PILGenerator.default_processors)
+            engine.Engine.default_processors)
 
     def test_process_image(self):
-        passthrough = lambda image, **opts: image
-        fake_processor1 = mock.Mock(side_effect=passthrough)
-        fake_processor2 = mock.Mock(side_effect=passthrough)
+        fake_processor1 = mock.Mock(side_effect=lambda image, **opts: image)
+        fake_processor2 = mock.Mock(side_effect=lambda image, **opts: image)
         self.generator.get_processors = mock.Mock(
             return_value=[fake_processor1, fake_processor2])
 
@@ -34,7 +33,7 @@ class PILGeneratorTest(TestCase):
             fake_processor2.mock_calls,
             [mock.call(image, **opts)]
         )
-        self.assertEqual(output, image)
+        self.assertEqual(output.image, image)
 
     def test_build_source(self):
         fake_source = object()

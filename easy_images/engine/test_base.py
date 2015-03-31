@@ -2,6 +2,7 @@ from unittest import TestCase
 
 import django.core.files.storage
 import easy_images.engine.default
+from easy_images.engine.engine_image import BaseEngineImage
 import mock
 
 from . import base
@@ -9,17 +10,15 @@ from . import base
 
 class TestEngine(base.BaseEngine):
 
-    def build_meta(self, *args, **kwargs):
-        return {}
-
     def build_source(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def is_transparent(self, *args, **kwargs):
         raise NotImplementedError
 
     def process_image(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class TransparentEngineImage(BaseEngineImage):
+    transparent = True
 
 
 class BaseTestCase(TestCase):
@@ -27,17 +26,17 @@ class BaseTestCase(TestCase):
     def setUp(self):
         self.engine = TestEngine()
         self.example_action = {
-            'source': 'easy_images/fake.jpg',
+            'source': 'fake.jpg',
             'opts': [
                 {
                     'KEY': 'fit_key',
-                    'FILENAME': 'easy_images/fit.jpg',
+                    'FILENAME': 'fit.jpg',
                     'fit': (200, 0),
                 },
                 {
                     'KEY': 'crop_key',
-                    'FILENAME': 'easy_images/crop.jpg',
-                    'FILENAME_TRANSPARENT': 'easy_images/crop.png',
+                    'FILENAME': 'crop.jpg',
+                    'FILENAME_TRANSPARENT': 'crop.png',
                     'crop': (64, 64),
                     'upscale': True,
                 },
@@ -55,9 +54,18 @@ class BaseEngineTest(BaseTestCase):
         self.engine.add(self.example_action)
         self.engine.generate.assert_called_once_with(self.example_action)
 
-    def test_generate_and_record(self):
+    @mock.patch.object(base.default_ledger, 'save')
+    def test_generate_and_record(self, ledger_save):
         self.engine.generate = mock.Mock(return_value=None)
-        with mock.patch.object(base.default_ledger, 'save') as ledger_save:
+        self.engine.generate_and_record(action=self.example_action)
+        self.assertEqual(self.engine.generate.call_count, 1)
+        self.assertEqual(ledger_save.call_count, 2)
+
+    def test_generate_and_record_custom_ledger(self):
+        self.engine.generate = mock.Mock(return_value=None)
+        ledger = 'easy_images.ledger.base.BaseLedger'
+        self.example_action['ledger'] = ledger
+        with mock.patch(ledger + '.save') as ledger_save:
             self.engine.generate_and_record(action=self.example_action)
             self.assertEqual(self.engine.generate.call_count, 1)
             self.assertEqual(ledger_save.call_count, 2)
@@ -79,7 +87,7 @@ class BaseEngineTest(BaseTestCase):
             source_url='source.jpg')
 
     def test_get_source_file(self):
-        file_obj = mock.Mock(file)
+        file_obj = mock.Mock()
         self.assertEqual(self.engine.get_source_file(
             file_obj, opts={}), file_obj)
         expected = 'fakefile'
@@ -110,7 +118,9 @@ class BaseEngineTest(BaseTestCase):
         fake_storage = mock.Mock()
         self.engine.get_generated_storage = mock.Mock(
             return_value=fake_storage)
-        self.engine.save('test.jpg', object(), {})
+        engine_image = mock.Mock(BaseEngineImage)
+        self.engine.save('test.jpg', engine_image, {})
+        self.assertTrue(engine_image.bytes.called)
         self.assertTrue(fake_storage.save.called)
 
 
@@ -121,43 +131,79 @@ class BaseEngineGenerateTest(BaseTestCase):
         self.engine.get_source_file = mock.Mock()
         self.engine.build_source = mock.Mock()
         self.engine.process_image = mock.Mock(return_value=None)
-        self.engine.is_transparent = mock.Mock(return_value=False)
-        self.engine.write_image = mock.Mock()
         self.engine.save = mock.Mock()
+
+    # def call_generate(self, engine_image_class=BaseEngineImage):
+    #     self.engine.get_source_file = mock.Mock()
+    #     self.engine.build_source = mock.Mock()
+    #     self.engine.process_image = mock.Mock(
+    #         return_value=engine_image_class(object(), {}))
+    #     self.engine.save = mock.Mock()
+
+    #     self.engine.generate(self.example_action)
+    #     return [calls[0][0] for calls in self.engine.save.call_args_list]
+
+    # def test_generate(self):
+    #     self.call_generate()
+    #     self.assertEqual(self.engine.get_source_file.call_count, 1)
+    #     self.assertEqual(self.engine.build_source.call_count, 1)
+    #     self.assertEqual(self.engine.process_image.call_count, 2)
+    #     self.assertEqual(self.engine.save.call_count, 2)
+
+    # def test_generate_no_opts(self):
+    #     del self.example_action['opts']
+    #     self.assertEqual(self.engine.generate(self.example_action), [])
+
+    # def test_generate_no_source_image(self):
+    #     self.engine.get_source_file = mock.Mock()
+    #     self.engine.build_source = mock.Mock(return_value=None)
+    #     self.assertEqual(self.engine.generate(self.example_action), [])
+
+    # def test_generate_saves_filename(self):
+    #     save_filenames = self.call_generate()
+    #     self.assertEqual(save_filenames, ['fit.jpg', 'crop.jpg'])
+
+    # def test_generate_saves_transparent_filename(self):
+    #     save_filenames = self.call_generate(
+    #         engine_image_class=TransparentEngineImage)
+    #     self.assertEqual(save_filenames, ['fit.jpg', 'crop.png'])
 
     def test_no_opts(self):
         output = self.engine.generate(action={})
-        self.assertEqual(output, {})
+        self.assertEqual(output, [])
         output = self.engine.generate(action={'opts': []})
-        self.assertEqual(output, {})
+        self.assertEqual(output, [])
         self.assertFalse(self.engine.get_source_file.called)
 
     def test_no_source_image(self):
         self.engine.build_source.return_value = None
         output = self.engine.generate(self.example_action)
-        self.assertEqual(output, {})
+        self.assertEqual(output, [])
         self.assertTrue(self.engine.get_source_file.called)
         self.engine.build_source.assert_called_with(
             self.engine.get_source_file())
         self.assertFalse(self.engine.process_image.called)
 
-    def test_save(self):
-        self.engine.process_image.side_effect = ['A', 'B']
+    def test_save_output(self):
+        img1 = mock.MagicMock(transparent=False)
+        self.engine.process_image.side_effect = [img1, None]
         output = self.engine.generate(self.example_action)
+        self.assertEqual(output, [img1, None])
+
+    def test_save(self):
+        self.engine.process_image = mock.Mock(
+            return_value=BaseEngineImage('source.jpg', {}))
+        self.engine.generate(self.example_action)
         self.assertEqual(self.engine.save.call_count, 2)
-        self.assertEqual(output, ['A', 'B'])
+        save_filenames = [
+            calls[0][0] for calls in self.engine.save.call_args_list]
+        self.assertEqual(save_filenames, ['fit.jpg', 'crop.jpg'])
 
     def test_save_transparent(self):
-        output = self.engine.generate(self.example_action)
-        self.assertEqual(self.engine.write_image.call_count, 2)
-        args = self.engine.write_image.call_args_list
-        self.assertEqual(args[0][0][1], 'easy_images/fit.jpg')
-        self.assertEqual(args[1][0][1], 'easy_images/crop.jpg')
-
-        self.engine.write_image.reset_mock()
-        self.engine.is_transparent.return_value = True
-        output = self.engine.generate(self.example_action)
-        self.assertEqual(self.engine.write_image.call_count, 2)
-        args = self.engine.write_image.call_args_list
-        self.assertEqual(args[0][0][1], 'easy_images/fit.jpg')
-        self.assertEqual(args[1][0][1], 'easy_images/crop.png')
+        self.engine.process_image = mock.Mock(
+            return_value=TransparentEngineImage('source.jpg', {}))
+        self.engine.generate(self.example_action)
+        self.assertEqual(self.engine.save.call_count, 2)
+        save_filenames = [
+            calls[0][0] for calls in self.engine.save.call_args_list]
+        self.assertEqual(save_filenames, ['fit.jpg', 'crop.png'])

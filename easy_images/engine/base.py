@@ -46,27 +46,27 @@ class BaseEngine(object):
     def generate(self, action):
         """
         Generate image(s) and save to storage.
+
+        :returns: list of processed ``EngineImage`` instances
         """
         if not action.get('opts'):
-            return {}
+            return []
         opts = action['opts'][0]
         source_file = self.get_source_file(action['source'], opts)
         source_image = self.build_source(source_file)
         if not source_image:
-            return {}
+            return []
         images = []
         for opts in action['opts']:
-            image = self.process_image(source_image, opts)
-            if 'FILENAME_TRANSPARENT' in opts and self.is_transparent(image):
+            engine_image = self.process_image(source_image, opts)
+            transparent = engine_image and engine_image.transparent
+            if transparent and 'FILENAME_TRANSPARENT' in opts:
                 filename = opts['FILENAME_TRANSPARENT']
             else:
                 filename = opts['FILENAME']
-            # Create a bytestream of the processed image object saved in the
-            # correct format.
-            processed_file = self.write_image(image, filename, **opts)
             # Save to storage.
-            self.save(filename, processed_file, opts)
-            images.append(image)
+            self.save(filename, engine_image, opts)
+            images.append(engine_image)
         return images
 
     def generate_and_record(self, action):
@@ -74,7 +74,7 @@ class BaseEngine(object):
         Generate processed images, save them to storage, then record the change
         in the ledger.
 
-        :returns: list of processed image objects
+        :returns: list of processed ``EngineImage`` instances
         """
         ledger = action.get('ledger')
         if ledger:
@@ -89,11 +89,17 @@ class BaseEngine(object):
             ledger.save(source_path, opts, meta)
         return images
 
-    @abc.abstractmethod
     def build_meta(self, image):
         """
-        Build a dictionary of metadata for an image.
+        Build a dictionary of metadata for an ``EngineImage``.
         """
+        if not image:
+            return {}
+        meta = {
+            'size': image.size,
+        }
+        if image.transparent:
+            meta['transparent'] = True
 
     @abc.abstractmethod
     def build_source(self, source_file):
@@ -105,14 +111,8 @@ class BaseEngine(object):
     def process_image(self, source_image, opts):
         """
         Process the source image using the options provided.
-        """
 
-    @abc.abstractmethod
-    def is_transparent(self, image):
-        """
-        Check whether the image is transparent.
-
-        :rtype: boolean
+        :rtype: EngineImage
         """
 
     def processing(self, key, **kwargs):
@@ -172,11 +172,12 @@ class BaseEngine(object):
         import easy_images.engine.default
         return easy_images.engine.default.default_storage
 
-    def save(self, path, obj, opts):
+    def save(self, path, engine_image, opts):
         """
-        Save data from file-like ``obj`` to a relative path.
+        Save an ``EngineImage`` to a relative path.
         """
-        return self.get_generated_storage(opts).save(path, File(obj))
+        processed_file = File(engine_image.bytes(path, opts))
+        return self.get_generated_storage(opts).save(path, processed_file)
 
     # def clean_opts(opts, remove_upper=False, **kwargs):
     #     """

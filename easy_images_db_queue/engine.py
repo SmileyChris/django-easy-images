@@ -1,4 +1,4 @@
-from easy_images.engine.pil import Engine
+from easy_images.engine.pil.engine import Engine
 
 from . import queue
 
