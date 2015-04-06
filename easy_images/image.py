@@ -1,5 +1,6 @@
 from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from easy_images.engine.default import default_engine
 from easy_images.ledger.default import default_ledger
 
@@ -50,7 +51,7 @@ class EasyImage(object):
         return self.ledger.build_filename(
             source_path=self.source_path, opts=self.opts, meta=self.meta)
 
-    @property
+    @cached_property
     def hash(self):
         """
         A hash representing this combination of source image and options.
@@ -199,6 +200,10 @@ class EasyImageBatch(object):
         for source, opts in sources or ():
             self.add(source, opts)
 
+    def add_image(self, image):
+        image.always_check_processing = False
+        self.new_images.append(image)
+
     def add(self, source, opts):
         """
         Add image options to a batch that will be loaded in a single call.
@@ -275,6 +280,25 @@ class EasyImageBatch(object):
             if processed_images and len(processed_images) == len(new_images):
                 for image, image_obj in zip(new_images, processed_images):
                     image.meta = self.engine.build_meta(image_obj)
+
+    def set_meta(self, image, no_check_processing=True):
+        """
+        Populate the meta of an ``EasyImage`` from the matching image in this
+        batch, if there is one.
+
+        :param no_check_processing: If ``True`` (default) then if the image is
+            found in this batch, turn off its "processing" check to avoid
+            unnecessary lookups.
+
+        :returns: Whether the image was found in this batch.
+        :rtype: boolean
+        """
+        for img in self:
+            if img.hash == image.hash:
+                image.meta = img.meta
+                if no_check_processing:
+                    image.always_check_processing = False
+                return True
 
 
 def annotate(obj_list, opts_map, get_source, batch=None):

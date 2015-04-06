@@ -6,10 +6,22 @@ from django.utils import six
 from django.utils.encoding import force_text
 
 from easy_images.aliases import aliases
-from easy_images.image import EasyImage
+from easy_images.image import EasyImage, EasyImageBatch
 
 register = template.Library()
 re_dimensions = re.compile('(\d+)[,x](\d+)$')
+CONTEXT_KEY = 'easy_image_batch'
+
+
+def _populate_from_context(image, context):
+    if not context:
+        return
+    batch = context.render_context.get(CONTEXT_KEY)
+    if batch:
+        if getattr(batch, 'gathering', None):
+            batch.add_image(image)
+            return ''
+        batch.set_meta(image)
 
 
 @register.filter
@@ -18,7 +30,9 @@ def image(source, opts):
         opts = aliases.get(force_text(opts))
     if opts is None:
         return ''
-    return EasyImage(source, opts)
+    image = EasyImage(source, opts)
+    _populate_from_context(image, get_filter_context())
+    return image
 
 
 @register.assignment_tag(takes_context=True)
@@ -42,6 +56,7 @@ class ImageNode(template.Node):
             if value is not None and value != '':
                 opts[key] = value
         image = EasyImage(source, opts)
+        _populate_from_context(image, context)
         if self.as_name:
             context[self.as_name] = image
             return ''
@@ -83,3 +98,80 @@ def do_image(parser, token):
     source = parser.compile_filter(args.pop(0))
     opts = dict(_build_opts(args, parser))
     return ImageNode(source, opts, as_name)
+
+
+def get_filter_context(max_depth=4):
+    """
+    A simple (and perhaps dangerous) way of obtaining a context.  Keep in mind
+    these shortcomings:
+
+    1. There is no guarantee this returns the right 'context'.
+
+    2. This only works during render execution.  So, be sure your filter
+       continues to work in other cases.
+
+    This approach uses the 'inspect' standard Python Library to harvest the
+    context from the call stack.
+    """
+    import inspect
+    stack = inspect.stack()[2:max_depth]
+    for frame_info in stack:
+        frame = frame_info[0]
+        arg_info = inspect.getargvalues(frame)
+        context = arg_info.locals.get('context')
+        if context:
+            return context
+    return {}
+
+
+class ImagebatchNode(template.Node):
+
+    def __init__(self, nodelist):
+        self.nodelist = nodelist
+
+    def render(self, context):
+        batch = context.render_context.get(CONTEXT_KEY)
+        if not batch:
+            batch = EasyImageBatch()
+            context.render_context[CONTEXT_KEY] = batch
+        gathering = getattr(batch, 'gathering', None)
+        if not gathering:
+            batch.gathering = True
+        self.nodelist.render(context)
+        if not gathering:
+            batch.gathering = False
+        return ''
+
+
+@register.tag
+def imagebatch(context, parser, token):
+    """
+    Image tags and filters rendered within this tag check for this batch state
+    and add to an EasyImageBatch dictionary on the context rather than
+    rendering themselves.
+
+    The batch is then generated at once, and the meta dictionary for each
+    EasyImage is placed in a dictionary in the render_context that image tags /
+    filters in the remainder of the template can access.
+
+    For example::
+
+        {% image_alias 'thumb' as thumb_opts %}
+
+        {% imagebatch %}
+        {% for obj in queryset %}
+        {{ obj.photo|image:thumb_opts }}
+        {% endfor %}
+        {% endimagebatch %}
+
+        {% for obj in queryset %}
+        <div class="gallery-item">
+            <img src="{{ obj.photo|image:thumb_opts }}" alt="{{ obj }}">
+        </div>
+        {% endfor %}
+
+    Nothing within the ``imagebatch`` tag will be output.
+    """
+    nodelist = parser.parse(('endimagebatch',))
+    parser.delete_first_token()
+    return ImagebatchNode(nodelist)
