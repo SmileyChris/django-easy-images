@@ -155,7 +155,7 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
         be cropped, it will trim off the right and bottom edges until the focal
         point is centered.
 
-    HIGHRES=int
+    HIGHRES=int/float
         Multiply the target resolution by this.
     """
     size = crop or fit or fill
@@ -165,8 +165,8 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [int(v) for v in size]
     if HIGHRES:
-        target_x *= int(HIGHRES)
-        target_y *= int(HIGHRES)
+        target_x = int(target_x * HIGHRES)
+        target_y = int(target_y * HIGHRES)
 
     if crop or fill or not target_x or not target_y:
         scale = max(target_x / source_x, target_y / source_y)

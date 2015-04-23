@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 import re
 
 from django import template
+from django.template.context import BaseContext
 from django.utils import six
 from django.utils.encoding import force_text
 
@@ -11,6 +12,7 @@ from easy_images.image import EasyImage, EasyImageBatch
 register = template.Library()
 re_dimensions = re.compile('(\d+)[,x](\d+)$')
 CONTEXT_KEY = 'easy_image_batch'
+empty_context = BaseContext()
 
 
 def _populate_from_context(image, context):
@@ -33,6 +35,34 @@ def image(source, opts):
     image = EasyImage(source, opts)
     _populate_from_context(image, get_filter_context())
     return image
+
+
+@register.filter
+def imageopts(image, extra_opts):
+    """
+    Create a new ``EasyImage`` based on an existing instance but with
+    additional options.
+
+    For example, make a greyscale version of a standard alias::
+
+        {{ person.photo|image:"square"|imageopts:"bw" }}
+
+    Or provide separate images for multiple pixel densities::
+
+        {% with image=person.photo|image %}
+        <img
+          src="{{ image }}"
+          srcset="{{ image|imageopts:"HIGHRES=1.5" }} 1.5x,
+                  {{ image|imageopts:"HIGHRES=2" }} 2x"
+          alt="">
+        {% endwith %}
+    """
+    token = template.base.Token(
+        token_type=template.base.TOKEN_BLOCK, contents=extra_opts)
+    args = token.split_contents()
+    opts = image.opts.copy()
+    opts.update(_build_opts(args))
+    return EasyImage(source=image.source, opts=opts)
 
 
 @register.assignment_tag(takes_context=True)
@@ -63,27 +93,40 @@ class ImageNode(template.Node):
         return image
 
 
-def _build_opts(args, parser):
+def _build_opts(args, parser=None):
     for arg in args:
         parts = arg.split('=', 1)
-        key = parts[0]
-        try:
-            value = parser.compile_filter(parts[1])
-            str_value = value.resolve({})
-        except IndexError:
-            value = True
-            str_value = ''
+        if len(parts) == 2:
+            value = parts[1]
+            if parser:
+                value = parser.compile_filter(value)
+            else:
+                value = template.Variable(value).resolve(empty_context)
+            try:
+                resolved_value = value.resolve(empty_context)
+            except template.VariableDoesNotExist:
+                if parser:
+                    resolved_value = None
+                else:
+                    # When not dealing with a parser, assume any non-literal
+                    # type is a raw string.
+                    resolved_value = parts[0]
+            if not parser:
+                # When not dealing with a parser, always just return the resolved
+                value = resolved_value
+        else:
+            value = resolved_value = True
         if not value:
             continue
-        if isinstance(value, six.string_types):
-            dimensions = re_dimensions.match(str_value)
+        if isinstance(resolved_value, six.string_types):
+            dimensions = re_dimensions.match(resolved_value)
             if dimensions:
                 value = [int(part) for part in dimensions.groups()]
-        yield key, value
+        yield parts[0], value
 
 
 @register.tag(name='image')
-def do_image(parser, token):
+def image_tag(parser, token):
     args = token.split_contents()
     tag_name = args.pop(0)
     as_name = None
@@ -166,7 +209,7 @@ def imagebatch(context, parser, token):
 
         {% for obj in queryset %}
         <div class="gallery-item">
-            <img src="{{ obj.photo|image:thumb_opts }}" alt="{{ obj }}">
+            <img src="{{ obj.photo|image:thumb_opts }}" alt="{{ obj }}">
         </div>
         {% endfor %}
 
