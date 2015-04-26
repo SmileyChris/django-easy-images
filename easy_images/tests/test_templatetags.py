@@ -81,3 +81,40 @@ class ImageTag(TestCase):
                 lambda source, opts: json.dumps(opts, sort_keys=True))
             output = t.render(template.Context({'a': 'A'}))
             self.assertEqual(output, '{"value1": "A"}')
+
+
+class PopulateFromContext(TestCase):
+
+    def test_noop(self):
+        mock_context = mock.MagicMock()
+        batch = mock_context.render_context.get()
+
+        # batch.__bool__.return_value = False
+        batch.__nonzero__.return_value = False
+        tags._populate_from_context(image=object(), context=mock_context)
+        self.assertFalse(batch.add_image.called)
+        self.assertFalse(batch.set_meta.called)
+
+    def test_no_context(self):
+        output = tags._populate_from_context(image=object(), context=None)
+        self.assertEqual(output, None)
+
+    def test_set_meta(self):
+        mock_context = mock.MagicMock()
+        batch = mock_context.render_context.get()
+        batch.gathering = None
+        image = object()
+
+        tags._populate_from_context(image=image, context=mock_context)
+        self.assertFalse(batch.add_image.called)
+        batch.set_meta.assert_called_with(image)
+
+    def test_gathering(self):
+        mock_context = mock.MagicMock()
+        batch = mock_context.render_context.get()
+        batch.gathering = True
+        image = object()
+
+        tags._populate_from_context(image=image, context=mock_context)
+        self.assertFalse(batch.set_meta.called)
+        batch.add_image.assert_called_with(image)

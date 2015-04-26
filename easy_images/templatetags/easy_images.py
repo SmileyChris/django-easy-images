@@ -22,7 +22,7 @@ def _populate_from_context(image, context):
     if batch:
         if getattr(batch, 'gathering', None):
             batch.add_image(image)
-            return ''
+            return
         batch.set_meta(image)
 
 
