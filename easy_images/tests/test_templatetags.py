@@ -64,23 +64,33 @@ class ImageAliasTagTest(TestCase):
 
 class ImageTag(TestCase):
 
+    def setUp(self):
+        self.patcher = mock.patch.object(tags, 'EasyImage')
+        self.EasyImage = self.patcher.start()
+        self.EasyImage.side_effect = (
+            lambda source, opts: json.dumps(opts, sort_keys=True))
+
+    def tearDown(self):
+        self.patcher.stop()
+
     def test_basic(self):
         t = template.Template(
             '{% load easy_images %}{% image "test.jpg" value=1 a %}')
-        with mock.patch.object(tags, 'EasyImage') as mocked:
-            mocked.side_effect = (
-                lambda source, opts: json.dumps(opts, sort_keys=True))
-            output = t.render(template.Context())
-            self.assertEqual(output, '{"a": true, "value": 1}')
+        output = t.render(template.Context())
+        self.assertEqual(output, '{"a": true, "value": 1}')
+
+    def test_as(self):
+        t = template.Template(
+            '{% load easy_images %}'
+            '{% image "test.jpg" value=1 a as a %}---{{ a|safe }}')
+        output = t.render(template.Context())
+        self.assertEqual(output, '---{"a": true, "value": 1}')
 
     def test_strip_none(self):
         t = template.Template(
             '{% load easy_images %}{% image "test.jpg" value1=a value2=b %}')
-        with mock.patch.object(tags, 'EasyImage') as mocked:
-            mocked.side_effect = (
-                lambda source, opts: json.dumps(opts, sort_keys=True))
-            output = t.render(template.Context({'a': 'A'}))
-            self.assertEqual(output, '{"value1": "A"}')
+        output = t.render(template.Context({'a': 'A'}))
+        self.assertEqual(output, '{"value1": "A"}')
 
 
 class PopulateFromContext(TestCase):
