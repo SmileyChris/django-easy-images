@@ -9,9 +9,6 @@ from . import base
 
 class TestEngine(base.BaseEngine):
 
-    # def generate(self, *args, **kwargs):
-    #     return 'ok, generated'
-
     def build_meta(self, *args, **kwargs):
         return {}
 
@@ -25,7 +22,7 @@ class TestEngine(base.BaseEngine):
         raise NotImplementedError
 
 
-class BaseEngineTest(TestCase):
+class BaseTestCase(TestCase):
 
     def setUp(self):
         self.engine = TestEngine()
@@ -35,7 +32,6 @@ class BaseEngineTest(TestCase):
                 {
                     'KEY': 'fit_key',
                     'FILENAME': 'easy_images/fit.jpg',
-                    'FILENAME_TRANSPARENT': 'easy_images/fit.png',
                     'fit': (200, 0),
                 },
                 {
@@ -47,6 +43,9 @@ class BaseEngineTest(TestCase):
                 },
             ],
         }
+
+
+class BaseEngineTest(BaseTestCase):
 
     def test_abc_protection(self):
         self.assertRaises(TypeError, base.BaseEngine)
@@ -113,3 +112,52 @@ class BaseEngineTest(TestCase):
             return_value=fake_storage)
         self.engine.save('test.jpg', object(), {})
         self.assertTrue(fake_storage.save.called)
+
+
+class BaseEngineGenerateTest(BaseTestCase):
+
+    def setUp(self):
+        super(BaseEngineGenerateTest, self).setUp()
+        self.engine.get_source_file = mock.Mock()
+        self.engine.build_source = mock.Mock()
+        self.engine.process_image = mock.Mock(return_value=None)
+        self.engine.is_transparent = mock.Mock(return_value=False)
+        self.engine.write_image = mock.Mock()
+        self.engine.save = mock.Mock()
+
+    def test_no_opts(self):
+        output = self.engine.generate(action={})
+        self.assertEqual(output, {})
+        output = self.engine.generate(action={'opts': []})
+        self.assertEqual(output, {})
+        self.assertFalse(self.engine.get_source_file.called)
+
+    def test_no_source_image(self):
+        self.engine.build_source.return_value = None
+        output = self.engine.generate(self.example_action)
+        self.assertEqual(output, {})
+        self.assertTrue(self.engine.get_source_file.called)
+        self.engine.build_source.assert_called_with(
+            self.engine.get_source_file())
+        self.assertFalse(self.engine.process_image.called)
+
+    def test_save(self):
+        self.engine.process_image.side_effect = ['A', 'B']
+        output = self.engine.generate(self.example_action)
+        self.assertEqual(self.engine.save.call_count, 2)
+        self.assertEqual(output, ['A', 'B'])
+
+    def test_save_transparent(self):
+        output = self.engine.generate(self.example_action)
+        self.assertEqual(self.engine.write_image.call_count, 2)
+        args = self.engine.write_image.call_args_list
+        self.assertEqual(args[0][0][1], 'easy_images/fit.jpg')
+        self.assertEqual(args[1][0][1], 'easy_images/crop.jpg')
+
+        self.engine.write_image.reset_mock()
+        self.engine.is_transparent.return_value = True
+        output = self.engine.generate(self.example_action)
+        self.assertEqual(self.engine.write_image.call_count, 2)
+        args = self.engine.write_image.call_args_list
+        self.assertEqual(args[0][0][1], 'easy_images/fit.jpg')
+        self.assertEqual(args[1][0][1], 'easy_images/crop.png')
