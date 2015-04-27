@@ -92,6 +92,12 @@ class ImageTag(TestCase):
         output = t.render(template.Context({'a': 'A'}))
         self.assertEqual(output, '{"value1": "A"}')
 
+    def test_dimensions(self):
+        t = template.Template(
+            '{% load easy_images %}{% image "test.jpg" crop=100x200 %}')
+        output = t.render(template.Context())
+        self.assertEqual(output, '{"crop": [100, 200]}')
+
 
 class PopulateFromContext(TestCase):
 

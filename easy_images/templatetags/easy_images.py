@@ -125,8 +125,8 @@ def _build_opts(args, parser=None, empty_opts=None):
             if empty_opts is not None:
                 empty_opts.add(parts[0])
             continue
-        if isinstance(resolved_value, six.string_types):
-            dimensions = re_dimensions.match(resolved_value)
+        if len(parts) == 2:
+            dimensions = re_dimensions.match(parts[1])
             if dimensions:
                 value = [int(part) for part in dimensions.groups()]
         yield parts[0], value
