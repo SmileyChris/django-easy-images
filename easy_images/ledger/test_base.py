@@ -17,8 +17,8 @@ class BaseLedgerTest(TestCase):
         fake_filenameinfo.src_dir = 'adir/'
         fake_filenameinfo.hash = 'ahash'
         fake_filenameinfo.ext = '.ext'
-        self.ledger.filename_info_class = (
-            lambda *args, **kwargs: fake_filenameinfo)
+        self.ledger.filename_info_class = mock.Mock(
+            return_value=fake_filenameinfo)
 
     def test_meta(self):
         meta = self.ledger.meta(**self.ledger_kwargs)
@@ -31,6 +31,22 @@ class BaseLedgerTest(TestCase):
             [('a/1.jpg', opts), ('b/2.jpg', opts), ('c/3.jpg', opts)])
         self.assertEqual(meta_list, [{}, {}, {}])
         self.assertEqual(self.ledger.meta.call_count, 3)
+
+    def test_get_filename_info(self):
+        opts = {'fit': (128, 128)}
+        expected = self.ledger.filename_info_class()
+        output = self.ledger.get_filename_info('test.jpg', opts)
+        self.assertEqual(output, expected)
+        self.ledger.filename_info_class.assert_called_with(
+            source_path='test.jpg', opts=opts, ledger=self.ledger)
+
+    def test_get_filename_info_shortcircuit(self):
+        info = object()
+        opts = {'fit': (128, 128)}
+        output = self.ledger.get_filename_info(
+            'test.jpg', opts, filename_info=info)
+        self.assertEqual(output, info)
+        self.assertFalse(self.ledger.filename_info_class.called)
 
     def test_build_filename(self):
         filename = self.ledger.build_filename(**self.ledger_kwargs)
