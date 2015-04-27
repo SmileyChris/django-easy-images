@@ -98,6 +98,11 @@ class ImageTag(TestCase):
         output = t.render(template.Context())
         self.assertEqual(output, '{"crop": [100, 200]}')
 
+    def test_invalid(self):
+        self.assertRaises(
+            template.TemplateSyntaxError, template.Template,
+            '{% load easy_images %}{% image "test.jpg" %}')
+
 
 class PopulateFromContext(TestCase):
 

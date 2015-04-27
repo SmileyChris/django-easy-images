@@ -137,14 +137,13 @@ def image_tag(parser, token):
     args = token.split_contents()
     tag_name = args.pop(0)
     as_name = None
-    if len(args) >= 2:
-        if args[-2] == 'as':
-            as_name = args[-1]
-            args = args[:-2]
-    if args < 2:
+    if len(args) < 2:
         raise template.TemplateSyntaxError(
             '{0} tag requires at least the source and one option'.format(
                 tag_name))
+    if args[-2] == 'as':
+        as_name = args[-1]
+        args = args[:-2]
     source = parser.compile_filter(args.pop(0))
     opts = dict(_build_opts(args, parser))
     return ImageNode(source, opts, as_name)
