@@ -56,12 +56,19 @@ def imageopts(image, extra_opts):
                   {{ image|imageopts:"HIGHRES=2" }} 2x"
           alt="">
         {% endwith %}
+
+    Remove an option by setting it to ``None``::
+
+        {{ person.photo|image:"square"|imageopts:"upscale=None" }}
     """
     token = template.base.Token(
         token_type=template.base.TOKEN_BLOCK, contents=extra_opts)
     args = token.split_contents()
+    empty_opts = set()
     opts = image.opts.copy()
-    opts.update(_build_opts(args))
+    opts.update(_build_opts(args, empty_opts=empty_opts))
+    for key in empty_opts:
+        opts.pop(key, None)
     return EasyImage(source=image.source, opts=opts)
 
 
@@ -93,7 +100,7 @@ class ImageNode(template.Node):
         return image
 
 
-def _build_opts(args, parser=None):
+def _build_opts(args, parser=None, empty_opts=None):
     for arg in args:
         parts = arg.split('=', 1)
         if len(parts) == 2:
@@ -101,7 +108,7 @@ def _build_opts(args, parser=None):
             if parser:
                 value = parser.compile_filter(value)
             else:
-                value = template.Variable(value).resolve(empty_context)
+                value = template.Variable(value)
             try:
                 resolved_value = value.resolve(empty_context)
             except template.VariableDoesNotExist:
@@ -110,13 +117,16 @@ def _build_opts(args, parser=None):
                 else:
                     # When not dealing with a parser, assume any non-literal
                     # type is a raw string.
-                    resolved_value = parts[0]
+                    resolved_value = parts[1]
             if not parser:
-                # When not dealing with a parser, always just return the resolved
+                # When not dealing with a parser, always just return the
+                # resolved value.
                 value = resolved_value
         else:
             value = resolved_value = True
         if not value:
+            if empty_opts is not None:
+                empty_opts.add(parts[0])
             continue
         if isinstance(resolved_value, six.string_types):
             dimensions = re_dimensions.match(resolved_value)

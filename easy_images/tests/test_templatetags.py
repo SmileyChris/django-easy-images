@@ -118,3 +118,63 @@ class PopulateFromContext(TestCase):
         tags._populate_from_context(image=image, context=mock_context)
         self.assertFalse(batch.set_meta.called)
         batch.add_image.assert_called_with(image)
+
+
+class ImageOptsFilter(TestCase):
+
+    def setUp(self):
+        self.image = mock.NonCallableMock(
+            spec=tags.EasyImage, source='test.jpg', opts={'fish': 'food'})
+        self.mock_patcher = mock.patch.object(tags, 'EasyImage')
+        self.EasyImage = self.mock_patcher.start()
+        self.EasyImage.return_value = 'out'
+
+    def tearDown(self):
+        self.mock_patcher.stop()
+
+    def test_number(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"TEST=1.5" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg', opts={'fish': 'food', 'TEST': 1.5})
+
+    def test_text(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"TEST=abc" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg', opts={'fish': 'food', 'TEST': 'abc'})
+
+    def test_bool(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"TEST" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg', opts={'fish': 'food', 'TEST': True})
+
+    def test_none(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"TEST=None" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg', opts={'fish': 'food'})
+
+    def test_override(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"fish=friends shark" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg', opts={'fish': 'friends', 'shark': True})
+
+    def test_override_remove(self):
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"fish=None" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(source='test.jpg', opts={})
