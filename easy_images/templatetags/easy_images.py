@@ -107,24 +107,21 @@ def _build_opts(args, parser=None, empty_opts=None):
             value = parts[1]
             if parser:
                 value = parser.compile_filter(value)
-            else:
-                value = template.Variable(value)
-            try:
                 resolved_value = value.resolve(empty_context)
-            except template.VariableDoesNotExist:
-                if parser:
-                    resolved_value = None
-                else:
+            else:
+                try:
+                    resolved_value = template.Variable(value).resolve(
+                        empty_context)
+                except template.VariableDoesNotExist:
                     # When not dealing with a parser, assume any non-literal
                     # type is a raw string.
                     resolved_value = parts[1]
-            if not parser:
                 # When not dealing with a parser, always just return the
                 # resolved value.
                 value = resolved_value
         else:
             value = resolved_value = True
-        if not value:
+        if not value and value != 0:
             if empty_opts is not None:
                 empty_opts.add(parts[0])
             continue
