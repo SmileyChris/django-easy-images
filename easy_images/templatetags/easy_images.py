@@ -193,7 +193,7 @@ class ImagebatchNode(template.Node):
 
 
 @register.tag
-def imagebatch(context, parser, token):
+def imagebatch(parser, token):
     """
     Image tags and filters rendered within this tag check for this batch state
     and add to an EasyImageBatch dictionary on the context rather than

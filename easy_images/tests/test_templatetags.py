@@ -199,3 +199,25 @@ class ImageOptsFilter(TestCase):
         output = t.render(template.Context({'image': self.image}))
         self.assertEqual(output, 'out')
         self.EasyImage.assert_called_with(source='test.jpg', opts={})
+
+
+class GetFilterContext(TestCase):
+
+    def fake_template_render(self):
+        return tags.get_filter_context()
+
+    def test_stack(self):
+        context = object()
+        self.assertEqual(self.fake_template_render(), context)
+
+    def test_missing_returns_empty_dict(self):
+        self.assertEqual(self.fake_template_render(), {})
+
+
+class ImageBatch(TestCase):
+
+    def test_no_content_rendered(self):
+        t = template.Template(
+            '{% load easy_images %}{% imagebatch %}test{% endimagebatch %}')
+        output = t.render(template.Context())
+        self.assertEqual(output, '')
