@@ -65,10 +65,10 @@ class AppSettings(object):
         if dict_attr:
             try:
                 settings_dict = getattr(django_settings, dict_attr)
+                dict_prefix = dict_attr and dict_attr + '__'
                 return settings_dict[attr[len(dict_prefix):]]
             except (AttributeError, KeyError):
                 return super(AppSettings, self).__getattribute__(attr)
-            dict_prefix = dict_attr and dict_attr + '__'
 
         # It must be just a standard attribute.
         try:
