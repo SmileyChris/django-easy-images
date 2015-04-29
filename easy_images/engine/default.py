@@ -7,9 +7,14 @@ except ImportError:   # pragma: no cover  (Django <1.7)
 # Set the default engine.
 default_engine = import_string(settings.EASY_IMAGES__ENGINE)()  # noqa
 
+
+def get_default_storage():
+    storage_setting = settings.EASY_IMAGES__STORAGE
+    if storage_setting:
+        return import_string(storage_setting)()
+    from django.core.files.storage import default_storage
+    return default_storage
+
+
 # Set the default storage.
-storage_setting = settings.EASY_IMAGES__STORAGE
-if storage_setting:
-    default_storage = import_string(storage_setting)()
-else:
-    from django.core.files.storage import default_storage  # noqa
+default_storage = get_default_storage()
