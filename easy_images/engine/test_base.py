@@ -123,6 +123,19 @@ class BaseEngineTest(BaseTestCase):
         self.assertTrue(engine_image.bytes.called)
         self.assertTrue(fake_storage.save.called)
 
+    def test_build_meta(self):
+        image = BaseEngineImage(image=mock.Mock(size=(100, 200)), opts={})
+        self.assertEqual(self.engine.build_meta(image), {'size': (100, 200)})
+
+        transparent_image = TransparentEngineImage(
+            image=mock.Mock(size=(300, 400)), opts={})
+        self.assertEqual(
+            self.engine.build_meta(transparent_image),
+            {'size': (300, 400), 'transparent': True})
+
+    def test_build_meta_empty(self):
+        self.assertEqual(self.engine.build_meta(None), {})
+
 
 class BaseEngineGenerateTest(BaseTestCase):
 

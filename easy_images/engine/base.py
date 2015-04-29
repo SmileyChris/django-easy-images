@@ -100,6 +100,7 @@ class BaseEngine(object):
         }
         if image.transparent:
             meta['transparent'] = True
+        return meta
 
     @abc.abstractmethod
     def build_source(self, source_file):
