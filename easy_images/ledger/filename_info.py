@@ -48,7 +48,7 @@ class FilenameInfo(object):
             parts = []
             for key, value in sorted(self._opts.items()):
                 if key == key.upper() or value is False or value is None:
-                    continue
+                    continue   # pragma: nocover due to python optimizations
                 if value is True:
                     parts.append(key)
                 else:

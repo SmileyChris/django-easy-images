@@ -124,7 +124,7 @@ def _build_opts(args, parser=None, empty_opts=None):
         if not value and value != 0:
             if empty_opts is not None:
                 empty_opts.add(parts[0])
-            continue
+            continue   # pragma: nocover because of python optimizations
         if len(parts) == 2:
             dimensions = re_dimensions.match(parts[1])
             if dimensions:
