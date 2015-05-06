@@ -154,6 +154,15 @@ class EasyImage(object):
         except AttributeError:
             return '{0}'.format(self.source)
 
+    @property
+    def opts(self):
+        return self._opts
+
+    @opts.setter
+    def opts(self, value):
+        self._opts = getattr(self.source, 'default_opts', None) or {}
+        self._opts.update(value)
+
     def generate(self, force=False):
         """
         Generate the image.
