@@ -78,3 +78,9 @@ class FilenameInfoTest(TestCase):
             source_path='easy_images/fake.jpg', opts=opts,
             ledger=self.mock_ledger)
         self.assertEqual(same_ext_info.unique_ext, '@4x.jpg')
+
+    def test_change_opts(self):
+        self.info.opts = {'crop': (64, 64)}
+        before = self.info.opts
+        self.info.opts = {'size': (64, 64)}
+        self.assertNotEqual(before, self.info.opts)
