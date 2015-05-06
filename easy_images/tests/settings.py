@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sites',
     'django.contrib.auth',
+    'easy_images.tests.apps.EasyImagesTests',
     'easy_images',
     'easy_images_db_ledger',
     'easy_images_db_queue',
@@ -29,5 +30,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
+
+EASY_IMAGES = {
+    'ALIASES': {'square': {'crop': (32, 32), 'upscale': True}},
+}
 
 SECRET_KEY = 'easy'

@@ -17,12 +17,13 @@ class EasyImageFieldFile(ImageFieldFile):
         references to it (and the target is actually set).
         """
         opts = {}
-        return self.field.storage()
         targetx = targety = None
-        if self.field.targetx_field:
-            targetx = getattr(self.instance, self.field.targetx_field, None)
-        if self.field.targety_field:
-            targety = getattr(self.instance, self.field.targety_field, None)
+        attrx = (self.field.targetx_field or
+                 '{}_targetx'.format(self.field.attname))
+        targetx = getattr(self.instance, attrx, None)
+        attry = (self.field.targety_field or
+                 '{}_targety'.format(self.field.attname))
+        targety = getattr(self.instance, attry, None)
         targetx = targetx if targetx is not None else 50
         targety = targety if targety is not None else 50
         if targetx != 50 or targety != 50:
@@ -33,7 +34,7 @@ class EasyImageFieldFile(ImageFieldFile):
         app_name = self.instance._meta.app_label if self.instance else None
         opts = aliases.get(key, app_name=app_name)
         if not opts:
-            raise IndexError
+            raise KeyError
         return EasyImage(self, opts=opts)
 
 
