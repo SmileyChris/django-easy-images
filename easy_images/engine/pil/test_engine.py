@@ -5,6 +5,24 @@ import mock
 from . import engine
 
 
+class EngineImageTest(TestCase):
+
+    @mock.patch('easy_images.engine.pil.utils.is_transparent')
+    def test_transparent(self, util):
+        util.return_value = True
+        image = engine.EngineImage(image=object(), opts={'size': (100, 100)})
+        self.assertEqual(image.transparent, True)
+
+    @mock.patch('easy_images.engine.pil.utils.is_transparent')
+    def test_transparent_cached(self, util):
+        util.return_value = True
+        image = engine.EngineImage(image=object(), opts={'size': (100, 100)})
+        image.transparent
+        image.transparent
+        image.transparent
+        self.assertEqual(util.call_count, 1)
+
+
 class PILGeneratorTest(TestCase):
 
     def setUp(self):
