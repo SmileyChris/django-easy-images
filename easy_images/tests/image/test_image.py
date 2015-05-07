@@ -26,17 +26,15 @@ class EasyImageTest(TestCase):
         return easy_images.image.EasyImage(**kwargs)
 
     def test_name(self):
-        ledger = mock.Mock(
-            BaseLedger, **{'build_filename.return_value': 'output.jpg'})
-        img = self.build_image(ledger=ledger)
+        img = self.build_image()
+        img.ledger.build_filename.return_value = 'output.jpg'
         self.assertEqual(img.name, 'output.jpg')
 
     def test_hash(self):
         filename_info = mock.Mock()
         filename_info.hash = 'hashhashhash'
-        ledger = mock.Mock(
-            BaseLedger, **{'get_filename_info.return_value': filename_info})
-        img = self.build_image(ledger=ledger)
+        img = self.build_image()
+        img.ledger.get_filename_info.return_value = filename_info
         self.assertEqual(img.hash, 'hashhashhash')
 
     def test_processing(self):
@@ -77,9 +75,8 @@ class EasyImageTest(TestCase):
     def test_build_url(self):
         expected = 'https://example.com/output.jpg'
         mock_storage = mock.Mock(**{'url.return_value': expected})
-        engine = mock.Mock(
-            BaseEngine, **{'get_generated_storage.return_value': mock_storage})
-        img = self.build_image(engine=engine)
+        img = self.build_image()
+        img.engine.get_generated_storage.return_value = mock_storage
         self.assertEqual(img.build_url(), expected)
 
     def test_url_if_generated(self):
@@ -92,9 +89,8 @@ class EasyImageTest(TestCase):
 
     def test_url_if_not_generated(self):
         expected = 'https://example.com/uing.jpg'
-        engine = mock.Mock(
-            BaseEngine, **{'processing_url.return_value': expected})
-        img = self.build_image(engine=engine)
+        img = self.build_image()
+        img.engine.processing_url.return_value = expected
         img.generate = mock.Mock(return_value=None)
         self.assertEqual(img.url, expected)
         self.assertTrue(img.generate.called)
@@ -139,9 +135,8 @@ class EasyImageTest(TestCase):
 
     def test_get_file_exists(self):
         expected = 'somefile'
-        engine = mock.Mock(
-            BaseEngine, **{'get_generated_file.return_value': expected})
-        img = self.build_image(engine=engine)
+        img = self.build_image()
+        img.engine.get_generated_file.return_value = expected
         img.meta = {}
         self.assertEqual(img.get_file(), expected)
 
@@ -189,9 +184,8 @@ class EasyImageTest(TestCase):
 
     def test_generate_returns_image(self):
         processed_image = object()
-        engine = mock.Mock(BaseEngine)
-        engine.add.return_value = [processed_image]
-        img = self.build_image(engine=engine)
+        img = self.build_image()
+        img.engine.add.return_value = [processed_image]
         self.assertEqual(img.generate(), processed_image)
 
     def test_loaded(self):
