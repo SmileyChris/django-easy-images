@@ -193,3 +193,9 @@ class EasyImageTest(TestCase):
         engine.add.return_value = [processed_image]
         img = self.build_image(engine=engine)
         self.assertEqual(img.generate(), processed_image)
+
+    def test_loaded(self):
+        image = self.build_image()
+        self.assertEqual(image.loaded, False)
+        image.meta
+        self.assertEqual(image.loaded, True)

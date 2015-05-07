@@ -130,6 +130,10 @@ class EasyImage(object):
         del self._meta
 
     @property
+    def loaded(self):
+        return hasattr(self, '_meta')
+
+    @property
     def width(self):
         size = self.meta and self.meta.get('size')
         if size:
