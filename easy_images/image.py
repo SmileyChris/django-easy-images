@@ -222,9 +222,8 @@ class EasyImageBatch(object):
         Add image options to a batch that will be loaded in a single call.
         """
         image = EasyImage(
-            source, opts, ledger=self.ledger, engine=self.engine,
-            always_check_processing=False)
-        self.new_images.append(image)
+            source, opts, ledger=self.ledger, engine=self.engine)
+        self.add_image(image)
         return image
 
     def __iter__(self):

@@ -11,10 +11,10 @@ from . import base
 class TestEngine(base.BaseEngine):
 
     def build_source(self, *args, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError   # pragma: nocover
 
     def process_image(self, *args, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError   # pragma: nocover
 
 
 class TransparentEngineImage(BaseEngineImage):
