@@ -12,6 +12,10 @@ class EngineImage(BaseEngineImage):
     def transparent(self):
         return utils.is_transparent(self.image)
 
+    @cached_property
+    def exif_orientation(self):
+        return utils.get_exif_orientation(self.image)
+
     def bytes(self, filename):
         """
         Save a PIL image to a bytestring.

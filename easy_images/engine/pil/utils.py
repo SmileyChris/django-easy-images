@@ -29,32 +29,38 @@ def is_transparent(image):
             (image.mode == 'P' and 'transparency' in image.info))
 
 
+def get_exif_orientation(im):
+    """
+    Return the image's EXIF orientation data.
+    """
+    try:
+        exif = im._getexif()
+        return int(exif.get(0x0112))
+    except Exception:
+        # There are many ways that _getexif fails, we're just going to blanket
+        # cover them all.
+        return None
+
+
 def exif_orientation(im):
     """
     Rotate and/or flip an image to respect the image's EXIF orientation data.
     """
-    try:
-        exif = im._getexif()
-    except Exception:
-        # There are many ways that _getexif fails, we're just going to blanket
-        # cover them all.
-        exif = None
-    if exif:
-        orientation = exif.get(0x0112)
-        if orientation == 2:
-            im = im.transpose(Image.FLIP_LEFT_RIGHT)
-        elif orientation == 3:
-            im = im.rotate(180)
-        elif orientation == 4:
-            im = im.transpose(Image.FLIP_TOP_BOTTOM)
-        elif orientation == 5:
-            im = im.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
-        elif orientation == 6:
-            im = im.rotate(-90)
-        elif orientation == 7:
-            im = im.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
-        elif orientation == 8:
-            im = im.rotate(90)
+    orientation = get_exif_orientation(im)
+    if orientation == 2:
+        im = im.transpose(Image.FLIP_LEFT_RIGHT)
+    elif orientation == 3:
+        im = im.rotate(180)
+    elif orientation == 4:
+        im = im.transpose(Image.FLIP_TOP_BOTTOM)
+    elif orientation == 5:
+        im = im.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
+    elif orientation == 6:
+        im = im.rotate(-90)
+    elif orientation == 7:
+        im = im.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
+    elif orientation == 8:
+        im = im.rotate(90)
     return im
 
 

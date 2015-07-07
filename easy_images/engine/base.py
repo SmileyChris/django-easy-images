@@ -95,12 +95,7 @@ class BaseEngine(object):
         """
         if not image:
             return {}
-        meta = {
-            'size': image.size,
-        }
-        if image.transparent:
-            meta['transparent'] = True
-        return meta
+        image.build_meta()
 
     @abc.abstractmethod
     def build_source(self, source_file):

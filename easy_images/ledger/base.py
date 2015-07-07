@@ -30,7 +30,8 @@ class BaseLedger(object):
         will be returned (so an empty dictionary, although falsey, still
         indicates the image exists).
 
-        Common meta options may be 'transparent', 'size', and 'date'.
+        Some common meta options are 'transparent', 'size', 'date', and
+        'rotation'.
 
         :rtype: dictionary, None
         """
