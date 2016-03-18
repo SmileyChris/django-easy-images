@@ -19,16 +19,15 @@ class LocalProcessingStorage(object):
     local_storage = local_storage
     engine = default_engine
     hash_re = re.compile(r'\b([a-z0-9]{27})\.(?:jpg|png)$')
-    upstream_methods =
 
-    def pick_storage(name):
+    def pick_storage(self, name):
         if isinstance(name, tuple):
             return name[:2]
         if self.is_processing(name):
             storage = self.local_storage
         else:
             storage = self.upstream_storage
-        return self.storage, name
+        return storage, name
 
     def get_key(self, name):
         match = self.hash_re.search(name)
@@ -42,6 +41,5 @@ class LocalProcessingStorage(object):
         return self.engine.processing(key)
 
     def _open(self, name, *args, **kwargs):
-        if self.exists(local)
         storage, name = self.pick_storage(name)
         return storage._open(name, *args, **kwargs)
