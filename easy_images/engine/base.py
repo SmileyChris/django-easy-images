@@ -95,7 +95,7 @@ class BaseEngine(object):
         """
         if not image:
             return {}
-        image.build_meta()
+        return image.build_meta()
 
     @abc.abstractmethod
     def build_source(self, source_file):
