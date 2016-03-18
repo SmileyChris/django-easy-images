@@ -12,9 +12,6 @@ def image_entropy(im):
     """
     Calculate the entropy of an image. Used for "smart cropping".
     """
-    if not isinstance(im, Image.Image):
-        # Only deals with PIL images. Fall back to a constant entropy.
-        return 0
     hist = im.histogram()
     hist_size = float(sum(hist))
     hist = [h / hist_size for h in hist]
