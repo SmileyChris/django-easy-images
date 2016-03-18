@@ -19,11 +19,11 @@ generation options in a single place.
 
 In your settings::
 
-	EASY_IMAGES = {
-		'ALIASES': {
-			'smallbox': {'crop': (32, 32), 'upscale': True},
-		},
-	}
+    EASY_IMAGES = {
+        'ALIASES': {
+            'smallbox': {'crop': (32, 32), 'upscale': True},
+        },
+    }
 
 Then to generate thumbs in a Django template just use::
 
