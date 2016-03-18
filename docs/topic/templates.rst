@@ -25,7 +25,7 @@ To output the URL for an aliased image, use the filter like so:
 
     <img src="{{ person.avatar|image:'thumbnail' }}" alt="">
 
-The output from the filter is actually an :cls:`~easy_images.core.EasyImage`
+The output from the filter is actually an :cls:`~easy_images.image.EasyImage`
 class, so if you would like to access other information then just use Django's
 standard ``{% with %}`` tag:
 

@@ -6,7 +6,7 @@ It may do this in a queue, or in-process depending on the requirements.
 An action looks like this::
 
     {
-        "source": source_url_or_path,
+        "source": source_file_or_path,
         "ledger": current_ledger,
         "opts": [
             {
