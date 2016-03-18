@@ -44,20 +44,17 @@ def exif_orientation(im):
     Rotate and/or flip an image to respect the image's EXIF orientation data.
     """
     orientation = get_exif_orientation(im)
-    if orientation == 2:
+
+    if orientation in (2, 4, 5, 7):
         im = im.transpose(Image.FLIP_LEFT_RIGHT)
-    elif orientation == 3:
-        im = im.rotate(180)
-    elif orientation == 4:
-        im = im.transpose(Image.FLIP_TOP_BOTTOM)
-    elif orientation == 5:
-        im = im.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
-    elif orientation == 6:
-        im = im.rotate(-90)
-    elif orientation == 7:
-        im = im.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
-    elif orientation == 8:
-        im = im.rotate(90)
+
+    if orientation in (7, 8):
+        im = im.transpose(Image.ROTATE_90)
+    elif orientation in (3, 4):
+        im = im.transpose(Image.ROTATE_180)
+    elif orientation in (5, 6):
+        im = im.transpose(Image.ROTATE_270)
+
     return im
 
 
