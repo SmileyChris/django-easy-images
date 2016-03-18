@@ -66,7 +66,7 @@ class BaseEngineImage(object):
         return 1
 
     @abc.abstractmethod
-    def bytes(self, options):
+    def bytes(self, filename):
         """
         Image saved as an in-memory stream of bytes ready for saving to a file
         system.

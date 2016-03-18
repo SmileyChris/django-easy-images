@@ -65,7 +65,7 @@ class BaseEngine(object):
             else:
                 filename = opts['FILENAME']
             # Save to storage.
-            self.save(filename, engine_image, opts)
+            self.save(filename, engine_image)
             images.append(engine_image)
         return images
 
@@ -168,12 +168,15 @@ class BaseEngine(object):
         import easy_images.engine.default
         return easy_images.engine.default.default_storage
 
-    def save(self, path, engine_image, opts):
+    def save(self, path, engine_image):
         """
         Save an ``EngineImage`` to a relative path.
         """
-        processed_file = File(engine_image.bytes(path, opts))
-        return self.get_generated_storage(opts).save(path, processed_file)
+        processed_file = File(engine_image.bytes(path))
+        return (
+            self.get_generated_storage(engine_image.opts)
+            .save(path, processed_file)
+        )
 
     # def clean_opts(opts, remove_upper=False, **kwargs):
     #     """
