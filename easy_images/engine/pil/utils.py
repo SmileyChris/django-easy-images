@@ -59,6 +59,7 @@ def exif_orientation(im):
 
 
 def save(filename, im, options, destination=None):
+    pil_options = options.copy()
     if destination is None:
         destination = BytesIO()
     # Ensure plugins are fully loaded so that Image.EXTENSION is populated.
@@ -66,15 +67,15 @@ def save(filename, im, options, destination=None):
     fmt = Image.EXTENSION.get(
         os.path.splitext(filename)[1].lower(), 'JPEG')
     if fmt in ('JPEG', 'WEBP'):
-        options.setdefault('quality', 85)
+        pil_options.setdefault('quality', 85)
     saved = False
     if fmt == 'JPEG':
-        progressive = options.pop('progressive', 100)
+        progressive = pil_options.pop('progressive', 100)
         if progressive:
             if progressive is True or max(im.size) >= int(progressive):
-                options['progressive'] = True
+                pil_options['progressive'] = True
         try:
-            im.save(destination, format=fmt, optimize=1, **options)
+            im.save(destination, format=fmt, optimize=1, **pil_options)
             saved = True
         except IOError:
             # Try again, without optimization (PIL can't optimize an image
@@ -83,7 +84,7 @@ def save(filename, im, options, destination=None):
             # versions of pillow avoid the MAXBLOCK limitation.
             pass
     if not saved:
-        im.save(destination, format=fmt, **options)
+        im.save(destination, format=fmt, **pil_options)
     if hasattr(destination, 'seek'):
         destination.seek(0)
     return destination
