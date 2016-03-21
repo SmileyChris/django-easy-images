@@ -119,6 +119,7 @@ class BaseEngineTest(BaseTestCase):
         self.engine.get_generated_storage = mock.Mock(
             return_value=fake_storage)
         engine_image = mock.Mock(BaseEngineImage)
+        engine_image.opts = {}
         self.engine.save('test.jpg', engine_image)
         self.assertTrue(engine_image.bytes.called)
         self.assertTrue(fake_storage.save.called)
