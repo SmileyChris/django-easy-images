@@ -49,7 +49,8 @@ class AliasesTest(TestCase):
         self.aliases_setting.return_value = {
             'small': {'crop': (48, 48)}, 'tiny': {'crop': (16, 16)}}
         aliases = library.Aliases()
-        self.assertEqual(aliases.get('tiny'), {'crop': (16, 16)})
+        self.assertEqual(
+            aliases.get('tiny'), {'ALIAS': 'tiny', 'crop': (16, 16)})
 
     def test_get_no_match(self):
         self.aliases_setting.return_value = {'small': {'crop': (48, 48)}}
@@ -61,7 +62,8 @@ class AliasesTest(TestCase):
             'small': {'crop': (48, 48)}, 'tiny': {'crop': (16, 16)}}
         aliases = library.Aliases()
         self.assertEqual(
-            aliases.get('tiny', app_name='other_app'), {'crop': (16, 16)})
+            aliases.get('tiny', app_name='other_app'),
+            {'ALIAS': 'tiny', 'crop': (16, 16)})
 
     def test_get_app(self):
         self.aliases_setting.return_value = {
@@ -71,7 +73,8 @@ class AliasesTest(TestCase):
         }
         aliases = library.Aliases()
         self.assertEqual(
-            aliases.get('small', app_name='some_app'), {'crop': (32, 32)})
+            aliases.get('small', app_name='some_app'),
+            {'crop': (32, 32), 'ALIAS': 'small', 'ALIAS_APP_NAME': 'some_app'})
 
     def test_get_app_fallback(self):
         self.aliases_setting.return_value = {
@@ -81,7 +84,8 @@ class AliasesTest(TestCase):
         }
         aliases = library.Aliases()
         self.assertEqual(
-            aliases.get('tiny', app_name='some_app'), {'crop': (16, 16)})
+            aliases.get('tiny', app_name='some_app'),
+            {'crop': (16, 16), 'ALIAS': 'tiny'})
 
     def test_get_app_no_match(self):
         self.aliases_setting.return_value = {

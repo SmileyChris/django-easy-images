@@ -51,7 +51,8 @@ class FieldAliasTest(TestCase):
     def test_alias(self):
         adam = models.Person('Adam', 'adam.jpg')
         self.assertEqual(
-            adam.photo['square'].opts, {'crop': (32, 32), 'upscale': True})
+            adam.photo['square'].opts,
+            {'ALIAS': 'square', 'crop': (32, 32), 'upscale': True})
 
     def test_bad_alias(self):
         adam = models.Person('Adam', 'adam.jpg')
