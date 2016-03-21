@@ -101,7 +101,8 @@ class FilenameInfo(object):
         """
         The base filename of the source image (excluding extension).
         """
-        return posixpath.basename(self._source_path)
+        filename = posixpath.basename(self._source_path)
+        return posixpath.splitext(filename)[0]
 
     @property
     def src_ext(self):
