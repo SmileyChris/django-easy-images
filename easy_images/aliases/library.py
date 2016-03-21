@@ -43,17 +43,27 @@ class Aliases(object):
         """
         Get a dictionary of aliased options.
 
-        If no matching alias is found, returns ``None``.
+        If no matching alias is found, returns ``None``. The options dictionary
+        will contain an ``'ALIAS'`` key (and ``'ALIAS_APP_NAME'``, if it
+        matched an app-specific alias).
 
         :param alias: The name of the aliased options.
         :param app_name: Look first for aliases for this specific application.
         :rtype: dict, None
         """
+        opts = {'ALIAS': alias}
         if app_name:
             app_aliases = self._aliases.get(app_name, {})
-            if alias in app_aliases:
-                return app_aliases[alias]
-        return self._aliases[None].get(alias)
+            alias_opts = app_aliases.get(alias)
+            if alias is not None:
+                opts.update(alias_opts)
+                opts['ALIAS_APP_NAME'] = app_name
+        if 'ALIAS_APP_NAME' not in opts:
+            alias_opts = self._aliases[None].get(alias)
+            if alias_opts is None:
+                return
+            opts.update(alias_opts)
+        return opts
 
     def all(self, app_name=None):
         """

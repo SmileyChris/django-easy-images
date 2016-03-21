@@ -69,6 +69,12 @@ def imageopts(image, extra_opts):
     opts.update(_build_opts(args, empty_opts=empty_opts))
     for key in empty_opts:
         opts.pop(key, None)
+    if opts != image.opts:
+        try:
+            del opts['ALIAS']
+            del opts['ALIAS_APP_NAME']
+        except KeyError:
+            pass
     return EasyImage(source=image.source, opts=opts)
 
 

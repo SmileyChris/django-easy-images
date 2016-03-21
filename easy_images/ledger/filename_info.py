@@ -74,6 +74,20 @@ class FilenameInfo(object):
         return self.make_hash(self.opts)
 
     @property
+    def opts_hash_or_alias(self):
+        """
+        If the opts came from an alais then return that, falling back to
+        :attr:`opts_hash`.
+        """
+        alias = self.opts.get('ALIAS')
+        if alias:
+            app_name = self.opts.get('ALIAS_APP_NAME')
+            if app_name:
+                return '{}-{}'.format(app_name, alias)
+            return alias
+        return self.opts_hash
+
+    @property
     def hash(self):
         """
         A 28 character url-safe base64 hash of the source image directory, name
