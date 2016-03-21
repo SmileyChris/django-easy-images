@@ -55,7 +55,7 @@ class Aliases(object):
         if app_name:
             app_aliases = self._aliases.get(app_name, {})
             alias_opts = app_aliases.get(alias)
-            if alias is not None:
+            if alias_opts is not None:
                 opts.update(alias_opts)
                 opts['ALIAS_APP_NAME'] = app_name
         if 'ALIAS_APP_NAME' not in opts:
