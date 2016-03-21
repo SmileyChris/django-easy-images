@@ -200,6 +200,24 @@ class ImageOptsFilter(TestCase):
         self.assertEqual(output, 'out')
         self.EasyImage.assert_called_with(source='test.jpg', opts={})
 
+    def test_alias_nochange(self):
+        self.image.opts = {'ALIAS': 'somealias', 'ALIAS_APP_NAME': 'someapp'}
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"fish=None" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(
+            source='test.jpg',
+            opts={'ALIAS': 'somealias', 'ALIAS_APP_NAME': 'someapp'})
+
+    def test_alias(self):
+        self.image.opts = {'ALIAS': 'somealias', 'ALIAS_APP_NAME': 'someapp'}
+        t = template.Template(
+            '{% load easy_images %}{{ image|imageopts:"new=1" }}')
+        output = t.render(template.Context({'image': self.image}))
+        self.assertEqual(output, 'out')
+        self.EasyImage.assert_called_with(source='test.jpg', opts={'new': 1})
+
 
 class GetFilterContext(TestCase):
 
