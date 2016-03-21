@@ -49,7 +49,7 @@ class FilenameInfoTest(TestCase):
             self.info.hash, 'EASY_IMAGES/FAKE.PNG:CROP-64,64_UPSCALE')
 
     def test_src_name(self):
-        self.assertEqual(self.info.src_name, 'fake.png')
+        self.assertEqual(self.info.src_name, 'fake')
 
     def test_src_ext(self):
         self.assertEqual(self.info.src_ext, '.png')
