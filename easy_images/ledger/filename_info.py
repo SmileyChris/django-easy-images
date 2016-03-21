@@ -74,14 +74,14 @@ class FilenameInfo(object):
         return self.make_hash(self.opts)
 
     @property
-    def opts_hash_or_alias(self):
+    def alias_or_opts_hash(self):
         """
         If the opts came from an alais then return that, falling back to
         :attr:`opts_hash`.
         """
-        alias = self.opts.get('ALIAS')
+        alias = self._opts.get('ALIAS')
         if alias:
-            app_name = self.opts.get('ALIAS_APP_NAME')
+            app_name = self._opts.get('ALIAS_APP_NAME')
             if app_name:
                 return '{}-{}'.format(app_name, alias)
             return alias

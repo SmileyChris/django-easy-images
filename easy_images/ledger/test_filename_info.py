@@ -44,6 +44,18 @@ class FilenameInfoTest(TestCase):
     def test_opts_hash(self):
         self.assertEqual(self.info.opts_hash, 'CROP-64,64_UPSCALE')
 
+    def test_alias_or_opts_hash_nomatch(self):
+        self.assertEqual(self.info.alias_or_opts_hash, 'CROP-64,64_UPSCALE')
+
+    def test_alias_or_opts_hash(self):
+        self.info._opts['ALIAS'] = 'somealias'
+        self.assertEqual(self.info.alias_or_opts_hash, 'somealias')
+
+    def test_alias_or_opts_hash_with_app_name(self):
+        self.info._opts['ALIAS'] = 'somealias'
+        self.info._opts['ALIAS_APP_NAME'] = 'someapp'
+        self.assertEqual(self.info.alias_or_opts_hash, 'someapp-somealias')
+
     def test_hash(self):
         self.assertEqual(
             self.info.hash, 'EASY_IMAGES/FAKE.PNG:CROP-64,64_UPSCALE')
