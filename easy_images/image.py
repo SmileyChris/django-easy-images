@@ -248,9 +248,9 @@ class EasyImageBatch(object):
                 meta_list = self.ledger.meta_list(meta_sources)
                 for image, meta in zip(meta_images, meta_list):
                     image.meta = meta
+            self.loaded_images.extend(loading_images)
             for image in loading_images:
                 yield image
-                self.loaded_images.append(image)
 
     def load(self):
         """
