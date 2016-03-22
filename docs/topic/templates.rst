@@ -55,6 +55,14 @@ The template code after the ``imagebatch`` is virtually rendered before its
 real render, which gathers the image options and then retrieves or generates
 them all in one batch.
 
+Because of this, be sure that your querysets or other intensive iteratives are
+generated in the view and passed to the template context rather than being
+generated in the template. Also cache any resource intensive methods that
+could be called.
+
+Alternatively, you can look at :ref:`python-batch-loading` in the Python
+layer.
+
 
 Examples
 ========

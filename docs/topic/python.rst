@@ -41,6 +41,9 @@ Some other useful properties are found on ``.meta``.
 Check the :cls:`easy_images.image.EasyImage` class for reference documentation
 on all properties and methods this class provides.
 
+
+.. _python-batch-loading:
+
 Batch loading
 =============
 
