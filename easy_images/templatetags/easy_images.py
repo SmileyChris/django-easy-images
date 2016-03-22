@@ -15,122 +15,67 @@ CONTEXT_KEY = 'easy_image_batch'
 empty_context = BaseContext()
 
 
-def _populate_from_context(image, context):
-    if not context:
-        return
-    batch = context.render_context.get(CONTEXT_KEY)
-    if batch:
-        if getattr(batch, 'gathering', None):
-            batch.add_image(image)
-            return
-        batch.set_meta(image)
-
-
-@register.filter
-def image(source, opts):
-    if not isinstance(opts, dict):
-        opts = aliases.get(force_text(opts))
-    if opts is None:
-        return ''
-    image = EasyImage(source, opts)
-    _populate_from_context(image, get_filter_context())
-    return image
-
-
-@register.filter
-def imageopts(image, extra_opts):
-    """
-    Create a new ``EasyImage`` based on an existing instance but with
-    additional options.
-
-    For example, make a greyscale version of a standard alias::
-
-        {{ person.photo|image:"square"|imageopts:"bw" }}
-
-    Or provide separate images for multiple pixel densities::
-
-        {% with image=person.photo|image %}
-        <img
-          src="{{ image }}"
-          srcset="{{ image|imageopts:"HIGHRES=1.5" }} 1.5x,
-                  {{ image|imageopts:"HIGHRES=2" }} 2x"
-          alt="">
-        {% endwith %}
-
-    Remove an option by setting it to ``None``::
-
-        {{ person.photo|image:"square"|imageopts:"upscale=None" }}
-    """
-    token = template.base.Token(
-        token_type=template.base.TOKEN_BLOCK, contents=extra_opts)
-    args = token.split_contents()
-    empty_opts = set()
-    opts = image.opts.copy()
-    opts.update(_build_opts(args, empty_opts=empty_opts))
-    for key in empty_opts:
-        opts.pop(key, None)
-    if opts != image.opts:
-        try:
-            del opts['ALIAS']
-            del opts['ALIAS_APP_NAME']
-        except KeyError:
-            pass
-    return EasyImage(source=image.source, opts=opts)
-
-
-@register.assignment_tag(takes_context=True)
-def image_alias(context, alias):
-    return aliases.get(force_text(alias), app_name=context.current_app)
-
-
 class ImageNode(template.Node):
 
-    def __init__(self, source_obj, opts, as_name):
+    def __init__(self, source_obj, opts, alias_obj, as_name):
         self.source_obj = source_obj
+        self.alias_obj = alias_obj
         self.opts = opts
         self.as_name = as_name
 
     def render(self, context):
         source = self.source_obj.resolve(context)
         opts = {}
+        if self.alias_obj:
+            alias = self.alias_obj.resolve(context)
+            alias_opts = aliases.get(
+                force_text(alias), app_name=context.current_app)
+            opts.update(alias_opts)
         for key, value in six.iteritems(self.opts):
             if hasattr(value, 'resolve'):
                 value = value.resolve(context)
-            if value is not None and value != '':
+            if value or value == 0:
                 opts[key] = value
+            else:
+                opts.pop(key, None)
+        if opts != alias_opts:
+            opts.pop('ALIAS', None)
+            opts.pop('ALIAS_APP_NAME', None)
         image = EasyImage(source, opts)
-        _populate_from_context(image, context)
+
+        # If batch processing images, either gather it now or try to populate
+        # it from the prebuilt batch.
+        batch = context.render_context.get(CONTEXT_KEY)
+        if batch:
+            if getattr(batch, 'gathering', None):
+                batch.add_image(image)
+                # Set the Image meta to avoid it getting built early.
+                image.meta = {}
+            else:
+                batch.set_meta(image)
+
         if self.as_name:
             context[self.as_name] = image
             return ''
         return image
 
 
-def _build_opts(args, parser=None, empty_opts=None):
+def _build_opts(args, parser=None):
     for arg in args:
         parts = arg.split('=', 1)
         if len(parts) == 2:
             value = parts[1]
             if parser:
                 value = parser.compile_filter(value)
-                resolved_value = value.resolve(empty_context)
             else:
                 try:
-                    resolved_value = template.Variable(value).resolve(
-                        empty_context)
+                    value = template.Variable(value).resolve(empty_context)
                 except template.VariableDoesNotExist:
                     # When not dealing with a parser, assume any non-literal
                     # type is a raw string.
-                    resolved_value = parts[1]
-                # When not dealing with a parser, always just return the
-                # resolved value.
-                value = resolved_value
+                    value = parts[1]
         else:
-            value = resolved_value = True
-        if not value and value != 0:
-            if empty_opts is not None:
-                empty_opts.add(parts[0])
-            continue   # pragma: nocover because of python optimizations
+            value = True
         if len(parts) == 2:
             dimensions = re_dimensions.match(parts[1])
             if dimensions:
@@ -140,43 +85,34 @@ def _build_opts(args, parser=None, empty_opts=None):
 
 @register.tag(name='image')
 def image_tag(parser, token):
+    """
+    Create a new image, providing image options and/or an alias.
+
+    Format::
+
+        {% image person.avatar crop %}
+        {% image person.avatar alias 'square' %}
+    """
     args = token.split_contents()
     tag_name = args.pop(0)
     as_name = None
-    if len(args) < 2:
-        raise template.TemplateSyntaxError(
-            '{0} tag requires at least the source and one option'.format(
-                tag_name))
     if args[-2] == 'as':
         as_name = args[-1]
         args = args[:-2]
+    alias = None
+    for i, arg in enumerate(args[:-1]):
+        if arg == 'alias':
+            alias = parser.compile_filter(args[i+1])
+            # Remove the alias keyword and the following argument.
+            del args[i:i+2]
+            break
+    if len(args) < 2 and not alias:
+        raise template.TemplateSyntaxError(
+            '{0} tag requires at least the source and one option'.format(
+                tag_name))
     source = parser.compile_filter(args.pop(0))
     opts = dict(_build_opts(args, parser))
-    return ImageNode(source, opts, as_name)
-
-
-def get_filter_context(max_depth=4):
-    """
-    A simple (and perhaps dangerous) way of obtaining a context.  Keep in mind
-    these shortcomings:
-
-    1. There is no guarantee this returns the right 'context'.
-
-    2. This only works during render execution.  So, be sure your filter
-       continues to work in other cases.
-
-    This approach uses the 'inspect' standard Python Library to harvest the
-    context from the call stack.
-    """
-    import inspect
-    stack = inspect.stack()[2:max_depth]
-    for frame_info in stack:
-        frame = frame_info[0]
-        arg_info = inspect.getargvalues(frame)
-        context = arg_info.locals.get('context')
-        if context:
-            return context
-    return {}
+    return ImageNode(source, opts, alias, as_name)
 
 
 class ImagebatchNode(template.Node):
@@ -189,44 +125,39 @@ class ImagebatchNode(template.Node):
         if not batch:
             batch = EasyImageBatch()
             context.render_context[CONTEXT_KEY] = batch
-        gathering = getattr(batch, 'gathering', None)
-        if not gathering:
+        rendering = getattr(batch, 'rendering', None)
+        # Don't virtually render nested tags.
+        if not rendering:
+            batch.rendering = True
             batch.gathering = True
-        self.nodelist.render(context)
-        if not gathering:
+            # Virtually render which will populate the batch.
+            self.nodelist.render(context)
             batch.gathering = False
-        return ''
+        output = self.nodelist.render(context)
+        if not rendering:
+            batch.rendering = False
+        return output
 
 
 @register.tag
 def imagebatch(parser, token):
     """
-    Image tags and filters rendered within this tag check for this batch state
-    and add to an EasyImageBatch dictionary on the context rather than
-    rendering themselves.
+    Image tags after this tag check are virtually rendered and added to an
+    EasyImageBatch dictionary on the context.
 
     The batch is then generated at once, and the meta dictionary for each
-    EasyImage is placed in a dictionary in the render_context that image tags /
-    filters in the remainder of the template can access.
+    EasyImage is placed in a dictionary in the render_context that the image
+    tags can access during a second render.
 
     For example::
 
-        {% image_alias 'thumb' as thumb_opts %}
-
         {% imagebatch %}
-        {% for obj in queryset %}
-        {{ obj.photo|image:thumb_opts }}
-        {% endfor %}
-        {% endimagebatch %}
 
         {% for obj in queryset %}
         <div class="gallery-item">
-            <img src="{{ obj.photo|image:thumb_opts }}" alt="{{ obj }}">
+            <img src="{% image obj.photo 'gallery-square' %}" alt="{{ obj }}">
         </div>
         {% endfor %}
-
-    Nothing within the ``imagebatch`` tag will be output.
     """
-    nodelist = parser.parse(('endimagebatch',))
-    parser.delete_first_token()
+    nodelist = parser.parse()
     return ImagebatchNode(nodelist)

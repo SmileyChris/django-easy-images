@@ -40,14 +40,14 @@ def colorspace(im, bw=False, replace_alpha=False, **kwargs):
     """
     Convert images to the correct color space.
 
-    A passive option (i.e. always processed) of this method is that all images
-    (unless grayscale) are converted to RGB colorspace.
+    A passive option (i.e. always processed) of this function is the image
+    (unless grayscale) is converted to RGB colorspace.
 
     This processor should be listed before :func:`resize` so palette is changed
     before the image is resized.
 
     bw
-        Make the thumbnail grayscale (not really just black & white).
+        Make the image grayscale (not really just black & white).
 
     replace_alpha
         Replace any transparency layer with a solid color. For example,
@@ -128,7 +128,7 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
 
     crop=(x, y)
         Crop the source image height or width to exactly match the requested
-        thumbnail size.
+        size.
 
     fill=(x, y)
         Proportianally scale the image so that it fills the given dimensions on
@@ -143,8 +143,7 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
 
     zoom=int
         A percentage to zoom in on the resized image. For example, a zoom of
-        ``40`` will clip 20% off each side of the source image before
-        thumbnailing.
+        ``40`` will clip 20% off each side of the source image before resizing.
 
     target=(x, y)
         Set the focal point as a percentage for the image if it needs to be
@@ -252,7 +251,7 @@ def filters(im, detail=False, sharpen=False, **kwargs):
     Pass the source image through post-processing filters.
 
     sharpen
-        Sharpen the thumbnail image (using the PIL sharpen filter)
+        Sharpen the image (using the PIL sharpen filter)
 
     detail
         Add detail to the image, like a mild *sharpen* (using the PIL

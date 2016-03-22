@@ -2,51 +2,15 @@
 Easy Images in Templates
 ========================
 
-There are a few ways to access easy-images in the template layer.
+Access easy-images in the template layer is... easy.
 
-If you have predefined aliases (recommended), the simplest is to use the
-``image`` filter passing it the alias.
+You can use (or extend) an alias, or just specify the options all directly in
+your template using ``{% image %}`` template tag.
 
-If you want to extend options provided in an alias, or just specify the options
-all directly in your template then use the ``{% image %}`` template tag.
-
-To use either the filter or template tag, you will have to load the easy_images
-template tag library into your template like so::
+You will have to load the easy_images template tag library into your template
+like so::
 
     {% load easy_images %}
-
-
-``image`` Filter
-================
-
-To output the URL for an aliased image, use the filter like so:
-
-.. code-block:: html
-
-    <img src="{{ person.avatar|image:'thumbnail' }}" alt="">
-
-The output from the filter is actually an :cls:`~easy_images.image.EasyImage`
-class, so if you would like to access other information then just use Django's
-standard ``{% with %}`` tag:
-
-.. code-block:: html
-
-    {% with thumb=person.photo|image:'thumbnail' %}
-    <img src="{{ thumb }}" alt=""
-         width="{{ thumb.width }}" height="{{ thumb.height }}">
-    {% endwith %}
-
-Application-specific aliases
-----------------------------
-
-If you have aliases that are limited to an application, you must get the
-thumbnail options using the following template tag, rather than just as a
-string on the ``image`` filter:
-
-.. code-block:: html
-
-    {% image_alias 'thumbnail' as thumbnail_opts %}
-    <img src="{{ person.avatar|image:thumbnail_opts }}" alt="">
 
 
 ``image`` Template Tag
@@ -54,20 +18,52 @@ string on the ``image`` filter:
 
 You can output the URL for an image while specifying the options in the
 template with the ``{% image %}`` tag. The first argument should be the source
-image, all other arguments are turned into options::
+image (or an EasyImage), all other arguments are turned into options::
 
     {% image person.photo crop=32,32 upscale %}
 
-Use ``as name`` at the end of the tag to save the ``EasyImage`` instance to the
-context rather than just outputting the URL::
+Use ``as name`` at the end of the tag to save the ``EasyImage`` instance to
+the context rather than just outputting the URL::
 
     {% image person.photo crop=32,32 as thumb %}
     Thumbnail name is: {{ thumb.name }}
     {% if not thumb.exists %}Thumbnail has not yet been generated!{% endif %}
 
-You can use this tag to extend the options of an existing EasyImage, generating
-a new image::
+Use ``alias 'some-alias'`` within the tag to pull initial options from an
+image alias::
 
-    {% with headshot=person.avatar|image:'headshot' %}
-        {% image headshot target=person.headshot_focal_point %}
-    {% endwith %}
+    {% image person.avatar alias 'icon' %}
+    {% image person.avatar alias 'headshot' target=person.avatar_focal_point %}
+
+Batch processing
+----------------
+
+To batch process a bunch of image tags, simply place a single
+``{% imagebatch %}`` tag before any images::
+
+    {% imagebatch %}
+
+    {% for person in people %}
+        <div>
+            {% image person.avatar alias 'square' as avatar %}
+            <img src="{{ avatar }}" alt="">
+            {{ person }}
+        </div>
+    {% endfor %}
+
+The template code after the ``imagebatch`` is virtually rendered before its
+real render, which gathers the image options and then retrieves or generates
+them all in one batch.
+
+
+Examples
+========
+
+Provide separate images for multiple pixel densities::
+
+    {% image person.photo fit=800,600 as person_photo %}
+    <img
+      src="{{ person_photo }}"
+      srcset="{% image person_photo HIGHRES=1.5 %} 1.5x,
+              {% image person_photo HIGHRES=2 %} 2x"
+      alt="">

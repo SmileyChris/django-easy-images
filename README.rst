@@ -27,7 +27,7 @@ In your settings::
 
 Then to generate thumbs in a Django template just use::
 
-    <img src="{{ person.avatar|image:'smallbox' }}" alt="">
+    <img src="{% image person.avatar alias 'smallbox' }}" alt="">
 
 Or in Python, use::
 
