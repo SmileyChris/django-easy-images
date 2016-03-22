@@ -3,13 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Easy Images's documentation!
-=======================================
-
-Contents:
+Easy Images |version|
+=====================
 
 .. toctree::
+   :caption: Topics:
    :maxdepth: 2
+
+   topic/install
+   topic/templates
+   topic/python
+   topic/customizing
+   topic/options
+
+.. toctree::
+   :caption: Reference:
+   :glob:
+
+   ref/*
 
 
 
