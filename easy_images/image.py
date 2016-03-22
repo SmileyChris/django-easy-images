@@ -31,6 +31,16 @@ def build_action(source_path, opts_list, ledger):
 
 @python_2_unicode_compatible
 class EasyImage(object):
+    """
+    An image that has been processed by Easy Images.
+
+    It's text representation is the url, so it's easy to use within templates.
+    Use the :attr:`exists` property to determine whether the image exists
+    before relying on it though.
+
+    :arg always_check_processing: Set to ``False`` to skip the processing
+        lookup when using :attr:`exists`.
+    """
 
     def __init__(self, source, opts, ledger=None, engine=None,
                  always_check_processing=True):

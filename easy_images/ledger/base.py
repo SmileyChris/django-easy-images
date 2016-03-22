@@ -10,8 +10,8 @@ class BaseLedger(object):
     """
     The default file name format for generated images.
 
-    See the :cls:`~easy_images.ledger.filename_info.FilenameInfo` class for the
-    available properties.
+    See the :class:`~easy_images.ledger.filename_info.FilenameInfo` class for
+    the available properties.
     """
     highres_infix = '_{highres}x'
     """

@@ -45,8 +45,7 @@ To batch process a bunch of image tags, simply place a single
 
     {% for person in people %}
         <div>
-            {% image person.avatar alias 'square' as avatar %}
-            <img src="{{ avatar }}" alt="">
+            <img src="{% image person.avatar alias 'square' %}" alt="">
             {{ person }}
         </div>
     {% endfor %}

@@ -3,7 +3,7 @@ Easy Images in Python
 =====================
 
 The primary way of interacting with the Easy Images components is with the
-:cls:`~easy_images.image.EasyImage` class.
+:class:`~easy_images.image.EasyImage` class.
 
 Create an instance of this class by providing a source image and generation
 options.
@@ -38,8 +38,8 @@ More functionality
 
 Some other useful properties are found on ``.meta``.
 
-Check the :cls:`easy_images.image.EasyImage` class for reference documentation
-on all properties and methods this class provides.
+Check the :class:`easy_images.image.EasyImage` class for reference
+documentation on all properties and methods this class provides.
 
 
 .. _python-batch-loading:
