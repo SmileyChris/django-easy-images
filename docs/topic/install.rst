@@ -23,8 +23,8 @@ want:
 Queueing
 ========
 
-To use the built-in basic database based queuing engine rather than real-time
-generation, you'll want to add:
+If you want to use the built-in basic database based queuing engine rather
+than real-time generation, you'll want to add:
 
 .. code-block:: python
 

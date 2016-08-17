@@ -85,6 +85,7 @@ For example::
 
     >>> from easy_images.image import annotate
     >>> annotate(person_queryset, opts_map, 'profile_photo')
+    >>> square_image = person_queryset[0].profile_photo.square
 
 Batch generation
 ----------------
