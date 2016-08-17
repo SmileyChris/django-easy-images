@@ -40,7 +40,7 @@ class Action(models.Model):
         index_together = [
             ('priority', 'time'),
         ]
-        ordering = ('-priority', 'time')
+        ordering = ('priority', 'time')
 
     def __str__(self):
         return "Queue for {source}".format(
