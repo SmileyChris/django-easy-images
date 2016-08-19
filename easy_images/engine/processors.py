@@ -1,39 +1,6 @@
-import itertools
 import re
 
 from django.utils import six
-from PIL import Image, ImageChops, ImageFilter
-
-from . import utils
-
-
-def _compare_entropy(start_slice, end_slice, slice, difference):
-    """
-    Calculate the entropy of two slices (from the start and end of an axis),
-    returning a tuple containing the amount that should be added to the start
-    and removed from the end of the axis.
-    """
-    start_entropy = utils.image_entropy(start_slice)
-    end_entropy = utils.image_entropy(end_slice)
-    if end_entropy and abs(start_entropy / end_entropy - 1) < 0.01:
-        # Less than 1% difference, remove from both sides.
-        if difference >= slice * 2:
-            return slice, slice
-        half_slice = slice // 2
-        return half_slice, slice - half_slice
-    if start_entropy > end_entropy:
-        return 0, slice
-    else:
-        return slice, 0
-
-
-def _points_table():
-    """
-    Iterable to map a 16 bit grayscale image to 8 bits.
-    """
-    for i in range(256):
-        for j in itertools.repeat(i, 256):
-            yield j
 
 
 def colorspace(im, bw=False, replace_alpha=False, **kwargs):
@@ -55,12 +22,6 @@ def colorspace(im, bw=False, replace_alpha=False, **kwargs):
         white.
 
     """
-    if im.mode == 'I':
-        # PIL (and pillow) have can't convert 16 bit grayscale images to lower
-        # modes, so manually convert them to an 8 bit grayscale.
-        im = im.point(list(_points_table()), 'L')
-
-    is_transparent = utils.is_transparent(im)
     is_grayscale = im.mode in ('L', 'LA')
     new_mode = im.mode
     if is_grayscale or bw:
@@ -68,13 +29,9 @@ def colorspace(im, bw=False, replace_alpha=False, **kwargs):
     else:
         new_mode = 'RGB'
 
-    if is_transparent:
+    if im.transparent:
         if replace_alpha:
-            if im.mode != 'RGBA':
-                im = im.convert('RGBA')
-            base = Image.new('RGBA', im.size, replace_alpha)
-            base.paste(im, mask=im)
-            im = base
+            im = im.replace_alpha(color=replace_alpha)
         else:
             new_mode = new_mode + 'A'
 
@@ -96,19 +53,7 @@ def autocrop(im, autocrop=False, **kwargs):
 
     """
     if autocrop:
-        # If transparent, flatten.
-        if utils.is_transparent(im) and False:
-            no_alpha = Image.new('L', im.size, (255))
-            no_alpha.paste(im, mask=im.split()[-1])
-        else:
-            no_alpha = im.convert('L')
-        # Convert to black and white image.
-        bw = no_alpha.convert('L')
-        # White background.
-        bg = Image.new('L', im.size, 255)
-        bbox = ImageChops.difference(bw, bg).getbbox()
-        if bbox:
-            im = im.crop(bbox)
+        return im.filter([('autocrop', True)])
     return im
 
 
@@ -191,9 +136,9 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
     if scale < 1.0 or (scale > 1.0 and upscale):
         # Resize the image to the target size boundary. Round the scaled
         # boundary sizes to avoid floating point errors.
-        im = im.resize((int(round(source_x * scale)),
-                        int(round(source_y * scale))),
-                       resample=Image.ANTIALIAS)
+        im = im.resize(
+            (int(round(source_x * scale)), int(round(source_y * scale))),
+            antialias=True)
 
     if crop:
         # Use integer values now.
@@ -201,7 +146,10 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
         # Difference between new image size and requested size.
         diff_x = int(source_x - min(source_x, target_x))
         diff_y = int(source_y - min(source_y, target_y))
-        if diff_x or diff_y:
+        cropped_image = smart_crop and im.smart_crop((target_x, target_y))
+        if cropped_image and cropped_image is not im:
+            im = cropped_image
+        elif diff_x or diff_y:
             if isinstance(target, six.string_types):
                 target = re.match(r'(\d+)?,(\d+)?$', target)
                 if target:
@@ -220,27 +168,6 @@ def resize(im, fit=None, crop=None, fill=None, smart_crop=False, upscale=False,
             ]
             box.append(min(source_x, int(box[0]) + target_x))
             box.append(min(source_y, int(box[1]) + target_y))
-            # See if the image should be "smart cropped".
-            if smart_crop:
-                left = top = 0
-                right, bottom = source_x, source_y
-                while diff_x:
-                    slice = min(diff_x, max(diff_x // 5, 10))
-                    start = im.crop((left, 0, left + slice, source_y))
-                    end = im.crop((right - slice, 0, right, source_y))
-                    add, remove = _compare_entropy(start, end, slice, diff_x)
-                    left += add
-                    right -= remove
-                    diff_x = diff_x - add - remove
-                while diff_y:
-                    slice = min(diff_y, max(diff_y // 5, 10))
-                    start = im.crop((0, top, source_x, top + slice))
-                    end = im.crop((0, bottom - slice, source_x, bottom))
-                    add, remove = _compare_entropy(start, end, slice, diff_y)
-                    top += add
-                    bottom -= remove
-                    diff_y = diff_y - add - remove
-                box = (left, top, right, bottom)
             # Finally, crop the image!
             im = im.crop(box)
     return im
@@ -251,22 +178,21 @@ def filters(im, detail=False, sharpen=False, **kwargs):
     Pass the source image through post-processing filters.
 
     sharpen
-        Sharpen the image (using the PIL sharpen filter)
+        Sharpen the image.
 
     detail
-        Add detail to the image, like a mild *sharpen* (using the PIL
-        ``detail`` filter).
+        Add detail to the image -- like a mild *sharpen*.
 
     """
+    filters = []
     if detail:
-        im = im.filter(ImageFilter.DETAIL)
+        filters.append(('detail', True))
     if sharpen:
-        im = im.filter(ImageFilter.SHARPEN)
+        filters.append(('sharpen', True))
     return im
 
 
-def background(im, fit=None, background=None, crop=None, replace_alpha=None,
-               **kwargs):
+def background(im, fit=None, background=None, **kwargs):
     """
     Add borders of a certain color to make the resized image fit exactly within
     the dimensions given.
@@ -287,10 +213,7 @@ def background(im, fit=None, background=None, crop=None, replace_alpha=None,
         # The image is already equal to (or larger than) the expected size, so
         # there's nothing to do.
         return im
-    im = colorspace(im, replace_alpha=background, **kwargs)
-    new_im = Image.new('RGB', fit, background)
-    if new_im.mode != im.mode:
-        new_im = new_im.convert(im.mode)
-    offset = (fit[0]-x)//2, (fit[1]-y)//2
-    new_im.paste(im, offset)
-    return new_im
+    if not im.transparent:
+        im = im.convert(im.mode + 'A')
+    im = im.canvas(fit)
+    return im.replace_alpha(background)

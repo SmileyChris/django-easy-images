@@ -30,10 +30,18 @@ from django.core.files import File
 from django.utils import six
 
 from easy_images.ledger.default import default_ledger, import_string
+from . import processors
 
 
 @six.add_metaclass(abc.ABCMeta)
 class BaseEngine(object):
+    default_processors = (
+        processors.colorspace,
+        processors.autocrop,
+        processors.resize,
+        processors.filters,
+        processors.background,
+    )
 
     def add(self, action, **kwargs):
         """
@@ -52,8 +60,7 @@ class BaseEngine(object):
         if not action.get('opts'):
             return []
         opts = action['opts'][0]
-        source_file = self.get_source_file(action['source'], opts)
-        source_image = self.build_source(source_file)
+        source_image = self.get_source_engine_image(action['source'], opts)
         if not source_image:
             return []
         images = []
@@ -100,16 +107,29 @@ class BaseEngine(object):
     @abc.abstractmethod
     def build_source(self, source_file):
         """
-        Build the source image.
+        Build the internal source image class.
         """
 
     @abc.abstractmethod
+    def get_image_class(self, opts):
+        """
+        Get the engine image class that should be used.
+        """
+
+    def get_processors(self):
+        return self.default_processors
+
     def process_image(self, source_image, opts):
         """
         Process the source image using the options provided.
 
-        :rtype: EngineImage
+        :param source_image: An instance of a BaseEngineImage subclass
+        :returns: BaseEngineImage subclass
         """
+        image = source_image
+        for processor in self.get_processors():
+            image = processor(image, **opts)
+        return image
 
     def processing(self, key, **kwargs):
         """
@@ -140,6 +160,13 @@ class BaseEngine(object):
         URL to return for an image which is currently being processed.
         """
         raise NotImplementedError()
+
+    def get_source_engine_image(self, source, opts):
+        source_file = self.get_source_file(source, opts)
+        image = self.build_source(source_file)
+        if not image:
+            return
+        return self.get_image_class(opts)(image=image, opts=opts)
 
     def get_source_file(self, source, opts):
         """

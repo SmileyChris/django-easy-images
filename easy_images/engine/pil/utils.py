@@ -1,5 +1,6 @@
 import math
 import os
+import itertools
 try:
     from cStringIO import cStringIO as BytesIO
 except ImportError:
@@ -88,3 +89,25 @@ def save(filename, im, options, destination=None):
     if hasattr(destination, 'seek'):
         destination.seek(0)
     return destination
+
+
+def _points_table():
+    """
+    Iterable to map a 16 bit grayscale image to 8 bits.
+    """
+    for i in range(256):
+        for j in itertools.repeat(i, 256):
+            yield j
+
+
+def convert_16bit_grayscale(im):
+    """
+    Manually convert 16 bit grayscale images to 6 bit (leaving other images
+    alone).
+
+    This function is useful since PIL (and pillow) has issues automatically
+    converting 16 bit grayscale images to lower modes.
+    """
+    if im.mode != 'I':
+        return im
+    return im.point(list(_points_table()), 'L')

@@ -38,6 +38,13 @@ class BaseEngineImage(object):
         return False
 
     @property
+    def mode(self):
+        """
+        Return the image mode, for example 'RGBA'.
+        """
+        return self.image.mode
+
+    @property
     def rotation(self):
         """
         Return the virtual rotation of this image.
@@ -73,3 +80,66 @@ class BaseEngineImage(object):
 
         :rtype: BytesIO
         """
+
+    def new_engine_image(self, image):
+        return self.__class__(image=image, opts=self.opts)
+
+    def filter(self, filters):
+        """
+        Return an engine image processed through one or more optional filters.
+
+        The class can define ``filter_[name]`` methods which take image and
+        value parameters and return an internal image instance.
+
+        :param filters: A list of (name, value) tuples.
+        """
+        image = self.image
+        changed = False
+        for name, value in filters:
+            filter_method = getattr(self, 'filter_{}'.format(name), None)
+            if callable(filter_method):
+                new_image = filter_method(image, value)
+                if new_image:
+                    image = new_image
+                    changed = True
+        if not changed:
+            return self
+        return self.new_engine_image(image)
+
+    @abc.abstractmethod
+    def convert_mode(self, mode):
+        """
+        Return an engine image which hase the correct image mode.
+        """
+
+    @abc.abstractmethod
+    def replace_alpha(self, color):
+        """
+        Return an engine image with the alpha layer replaced with a specific
+        hex color.
+        """
+
+    @abc.abstractmethod
+    def resize(self, size, antialias=True):
+        """
+        Return an engine image resized to the new dimensions.
+        """
+
+    @abc.abstractmethod
+    def crop(self, box):
+        """
+        Return an engine image cropped to box dimensions ``(x, y, x2, y2)``.
+        """
+
+    @abc.abstractmethod
+    def canvas(self, size):
+        """
+        Change the canvas size of an image (centering the original).
+        """
+
+    def smart_crop(self, size):
+        """
+        Automatically crop edges with least noise until size matches, or return
+        the image unchanged if unneeded or not implemented.
+        """
+        return self
