@@ -8,14 +8,10 @@ Usage::
 """
 
 from django.core.cache.backends.base import InvalidCacheBackendError
+from django.core.cache import caches
 
-# Set up image cache.
+
 try:
-    from django.core.cache import caches
-    get_cache = lambda cache_name: caches[cache_name]
-except ImportError:  # pragma: no cover  (Django <= 1.6)
-    from django.core.cache import get_cache
-try:
-    image_cache = get_cache('easy_images')
+    image_cache = caches['easy_images']
 except InvalidCacheBackendError:
-    from django.core.cache import cache as image_cache  # noqa
+    from django.core.cache import cache as image_cache   # noqa
