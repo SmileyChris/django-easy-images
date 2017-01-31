@@ -1,9 +1,13 @@
-from PIL import Image, ImageFilter, ImageChops
+from io import BytesIO
+
+from PIL import Image, ImageFilter, ImageChops, ImageCms
 from django.utils.functional import cached_property
 from easy_images.engine.base import BaseEngine
 from easy_images.engine.engine_image import BaseEngineImage
 
 from . import utils
+
+RGB_PROFILE = ImageCms.createProfile('sRGB')
 
 
 def _compare_entropy(start_slice, end_slice, slice, difference):
@@ -141,6 +145,18 @@ class PILEngineImage(BaseEngineImage):
             bottom -= remove
             diff_y = diff_y - add - remove
         return self.crop((left, top, right, bottom))
+
+    def convert_color_profile(self):
+        icc_profile = self.image.info.get('icc_profile')
+        if not icc_profile:
+            return self
+        try:
+            image_profile = ImageCms.ImageCmsProfile(BytesIO(icc_profile))
+            image = ImageCms.profileToProfile(
+                self.image, image_profile, RGB_PROFILE)
+        except Exception:
+            return self
+        return self.new_engine_image(image)
 
 
 class Engine(BaseEngine):

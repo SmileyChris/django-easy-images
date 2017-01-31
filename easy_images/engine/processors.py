@@ -22,6 +22,8 @@ def colorspace(im, bw=False, replace_alpha=False, **kwargs):
         white.
 
     """
+    im = im.convert_color_profile()
+
     is_grayscale = im.mode in ('L', 'LA')
     new_mode = im.mode
     if is_grayscale or bw:

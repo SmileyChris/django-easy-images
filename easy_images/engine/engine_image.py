@@ -143,3 +143,10 @@ class BaseEngineImage(object):
         the image unchanged if unneeded or not implemented.
         """
         return self
+
+    def convert_color_profile(self):
+        """
+        Convert an image's embedded color profile to standard RGB,
+        returning the modified image (or returning the image unchanged
+        if unneeded or not implemented).
+        """
