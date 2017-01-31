@@ -29,6 +29,10 @@ class AppSettings(object):
     """
 
     def __getattribute__(self, attr):
+        # Return magic attributes without doing anything.
+        if attr.startswith('__'):
+            return super(AppSettings, self).__getattribute__(attr)
+
         # Retrieve (or build) any settings dictionaries (split by two
         # undescores).
         try:
