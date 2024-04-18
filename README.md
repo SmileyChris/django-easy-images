@@ -74,7 +74,14 @@ sudo pacman -S libvips
 
 ## Usage
 
-In summary, you use the `Img` class or `{% img %}` template tag to render a Django FieldFile (or ImageFieldFile) containing an image as a responsive HTML `<img>` tag.
+You use the `Img` class or `{% img %}` template tag to render a Django FieldFile (or ImageFieldFile) containing an image as a responsive HTML `<img>` tag.
+
+### Summary
+
+1. Define your `Img` classes in your app's `images.py` file.
+2. Use these in your views / templates to generate the `<img>` tags.
+3. Either set up a cron job to run the `build_img_queue` management command to build images, or use a celery task and the `queued_img` signal to build images as they are queued.
+4. Optionally, use the `Img.queue` method in your `apps.py` file to queue images for building as soon as they are uploaded (building the src/srcset inline if needed).
 
 ### Img class
 
@@ -225,16 +232,19 @@ The base `src` image format will always be built as a JPEG for backwards compati
 
 ## Signals
 
+### Queue from model.
+
 ### `file_post_save` signal
 
 This signal is triggered for each that `FileField` that was uncommitted when it's model instance is saved.
 
-It can be used to build & pre-queue images for a model instance. Here is an example of connecting to this receiver in your `apps.py` file for a specific model:
+It can be used to build & pre-queue images for a model instance.
+
+The most simplest usage is via the `Img` instance's helper method called `queue`. Here's an example of using that in a model's `apps.py` file:
 
 ```python
 from django.apps import AppConfig
 
-from easy_images.signals import file_post_save
 from my_app.images import thumbnail
 
 class MyAppConfig(AppConfig):
@@ -243,12 +253,10 @@ class MyAppConfig(AppConfig):
     def ready(self):
         from my_app.models import Profile
 
-        file_post_save.connect(self.build_image, sender=Profile)
-      
-    @staticmethod
-    def build_image(image, **kwargs):
-        thumbnail(image, build="base")
+        thumbnail.queue(Profile, build="src")
 ```
+
+`queue` can also take a `fields` argument to limit which fields to queue images for. It can either be a field class or subclass that the field must be (default is `ImageField`) or a list of field names to match (the signal will still only fire on `FileField` classes/subclasses).
 
 ### `queued_img` signal
 

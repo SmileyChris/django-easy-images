@@ -3,12 +3,13 @@ from __future__ import annotations
 import mimetypes
 from typing import TYPE_CHECKING, NamedTuple, cast
 
+from django.db.models import FileField, ImageField, Model
 from django.db.models.fields.files import FieldFile
 from django.utils.html import escape
 from typing_extensions import Unpack
 
 from easy_images.options import ParsedOptions
-from easy_images.signals import queued_img
+from easy_images.signals import file_post_save, queued_img
 from easy_images.types import BuildChoices, ImgOptions, Options
 
 if TYPE_CHECKING:
@@ -51,6 +52,28 @@ class Img:
         self, source: FieldFile, alt: str | None = None, build: BuildChoices = None
     ):
         return BoundImg(source, alt=alt, img=self, build=build)
+
+    def queue(
+        self,
+        model: Model,
+        *,
+        fields: type[FileField] | list[str] = ImageField,
+        build: BuildChoices = None,
+    ):
+        """
+        Listen for saves to files on a specific model.
+        """
+
+        def handle_file(fieldfile: FieldFile, **kwargs):
+            if fields:
+                if isinstance(fields, list):
+                    if fieldfile.field.name not in fields:
+                        return
+                elif not isinstance(fieldfile, fields):
+                    return
+            self(fieldfile, build=build)
+
+        file_post_save.connect(handle_file, sender=model)
 
 
 class SrcSetItem(NamedTuple):
