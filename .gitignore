@@ -1,5 +1,1 @@
-*.egg
-*.egg-info/
-htmlcov/
-.coverage
-docs/_build
+example.jpg

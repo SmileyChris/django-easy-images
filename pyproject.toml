@@ -1,0 +1,32 @@
+[project]
+name = "easy-images"
+version = "0.1.0"
+description = "Django responsive image handler"
+authors = [{ name = "Chris Beaven", email = "smileychris@gmail.com" }]
+dependencies = [
+    "django",
+    "typing-extensions>=4.11.0",
+    "django-stubs-ext>=4.2.7",
+    "pyvips>=2.2.2",
+    "tqdm>=4.66.2",
+    "pillow",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+tests = ["pytest", "pytest-django>=4.8.0"]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+django_find_project = false
+pythonpath = "."
