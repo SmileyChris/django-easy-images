@@ -3,7 +3,13 @@
 Easily build responsive HTML `<img>` tags by thumbnailing Django images.
 
 When an `<img>` is generated, any thumbnails that don't already exist are queued for building (if aren't already queued) and left out of the HTML.
-For example, `Img(width="md")` will generate:
+For example, an image built from `Img(width="md")` will generate:
+
+```html
+<img src="/media/img/profiles/john.jpg" alt="Profile photo for John Doe">
+```
+
+But after the images are built, the HTML will be:
 
 ```html
 <img
@@ -13,7 +19,7 @@ For example, `Img(width="md")` will generate:
     /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.avif 2x
   "
   alt="Profile photo for John Doe"
-/>
+>
 ```
 
 ## Installation & Configuration
@@ -24,11 +30,10 @@ To install easy-images, simply run the following command:
 pip install easy-images
 ```
 
-Once installed, add `easy_images` to your `INSTALLED_APPS` in your Django settings file:
+Once installed, add the `easy_images` app in your Django settings file:
 
 ```python
 INSTALLED_APPS = [
-    # ...
     "easy_images",
     # ...
 ]
@@ -224,37 +229,25 @@ The base `src` image format will always be built as a JPEG for backwards compati
 
 This signal is triggered for each that `FileField` that was uncommitted when it's model instance is saved.
 
-It can be used to build & pre-queue images for a model instance. For example:
-
-```python
-from django.db import models
-from django.db.models.fields.files import ImageFieldFile
-
-from my_app.img import thumbnail
-
-def generate_images(instance, image, **kwargs):
-    """
-    Trigger generation of all related `<img>` images for an uncommitted ImageField
-    just before its model is saved.
-    """
-    if isinstance(image, ImageFieldFile):
-        thumbnail(image, build="base")
-```
-
-In your `apps.py` file, connect this receiver:
+It can be used to build & pre-queue images for a model instance. Here is an example of connecting to this receiver in your `apps.py` file for a specific model:
 
 ```python
 from django.apps import AppConfig
 
 from easy_images.signals import file_post_save
+from my_app.images import thumbnail
 
 class MyAppConfig(AppConfig):
     name = 'my_app'
 
     def ready(self):
-        from my_app.signals import generate_images
+        from my_app.models import Profile
 
-        file_post_save.connect(generate_images)
+        file_post_save.connect(self.build_image, sender=Profile)
+      
+    @staticmethod
+    def build_image(image, **kwargs):
+        thumbnail(image, build="base")
 ```
 
 ### `queued_img` signal
