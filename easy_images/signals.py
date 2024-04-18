@@ -1,6 +1,5 @@
 import django.dispatch
 from django.db.models import FileField
-from django.db.models.signals import post_save, pre_save
 
 file_post_save = django.dispatch.Signal()
 """
@@ -20,7 +19,6 @@ A signal sent when an ``Img`` queues images for building.
 """
 
 
-@pre_save.connect
 def find_uncommitted_filefields(sender, instance, **kwargs):
     """
     A pre_save signal handler which attaches an attribute to the model instance
@@ -39,7 +37,6 @@ def find_uncommitted_filefields(sender, instance, **kwargs):
             uncommitted.append(field.name)
 
 
-@post_save.connect
 def signal_committed_filefields(sender, instance, **kwargs):
     """
     A post_save signal handler which sends a signal for each ``FileField`` that

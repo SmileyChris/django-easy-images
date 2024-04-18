@@ -73,7 +73,7 @@ class Img:
                     return
             self(fieldfile, build=build)
 
-        file_post_save.connect(handle_file, sender=model)
+        file_post_save.connect(handle_file, sender=model, weak=False)
 
 
 class SrcSetItem(NamedTuple):
