@@ -37,7 +37,7 @@ def get_storage_name(storage: Storage) -> str:
     raise ValueError(f"Unknown storage: {storages}")
 
 
-class EasyImageManager(models.Manager):
+class EasyImageManager(models.Manager["EasyImage"]):
     def hash(self, *, name: str, storage: str, options: ParsedOptions) -> UUID:
         hash = options.hash()
         hash.update(f":{storage}:{name}".encode())
