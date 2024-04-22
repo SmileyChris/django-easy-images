@@ -55,13 +55,15 @@ class Img:
 
     def queue(
         self,
-        model: Model,
+        model: type[Model],
         *,
-        fields: type[FileField] | list[str] = ImageField,
+        fields: type[FileField] | list[str] | None = ImageField,
         build: BuildChoices = None,
     ):
         """
         Listen for saves to files on a specific model.
+
+        By default, this will listen for saves to any ImageField on the model.
         """
 
         def handle_file(fieldfile: FieldFile, **kwargs):

@@ -100,21 +100,24 @@ def efficient_load(
     height_ratio)`` and the image will be loaded (optimally shrunk to at least 3x the
     largest target size if possible).
     """
-    img = _new_image(file)
+    if options and not isinstance(options, list):
+        options = [options]
+    # Use random access if there are multiple target sizes, since the source image will
+    # be used multiple times.
+    access = "random" if options and len(options) > 1 else "sequential"
+    img = _new_image(file, access=access)
     if not options:
         return img
-    if not isinstance(options, list):
-        options = [options]
     x_scale = img.width / max(opt.source_x(img.width) for opt in options)
     y_scale = img.height / max(opt.source_y(img.height) for opt in options)
     min_scale = min(x_scale, y_scale) / 3  # At least 3x of the target size
     if min_scale < 2:
         return img
     shrink = min(2 ** (math.floor(math.log(min_scale, 2))), 8)
-    return _new_image(file, shrink=shrink)
+    return _new_image(file, shrink=shrink, access=access)
 
 
-def _new_image(file: str | Path | File, access="sequential", **kwargs):
+def _new_image(file: str | Path | File, access, **kwargs):
     path = None
     if isinstance(file, File):
         if isinstance(file, FieldFile):

@@ -256,7 +256,10 @@ class MyAppConfig(AppConfig):
         thumbnail.queue(Profile, build="src")
 ```
 
-`queue` can also take a `fields` argument to limit which fields to queue images for. It can either be a field class or subclass that the field must be (default is `ImageField`) or a list of field names to match (the signal will still only fire on `FileField` classes/subclasses).
+By default, `queue` listens for saves to any `ImageField` on the model. Use the `fields` argument to limit which fields to queue images for:
+* `None` means all file fields on the model
+* a field class or subclass that the field must be *(default is `ImageField`)*
+* a list of field names to match (the signal will still only fire on file fields)
 
 ### `queued_img` signal
 

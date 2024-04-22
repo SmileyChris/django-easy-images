@@ -7,6 +7,7 @@ DATABASES = {
 
 INSTALLED_APPS = [
     "easy_images",
+    "tests.easy_images_tests",
 ]
 
 STORAGES = {
@@ -19,3 +20,4 @@ STORAGES = {
 }
 
 USE_TZ = True
+SECRET_KEY = "test"

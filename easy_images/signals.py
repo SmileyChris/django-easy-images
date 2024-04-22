@@ -46,4 +46,4 @@ def signal_committed_filefields(sender, instance, **kwargs):
         fieldfile = getattr(instance, field_name)
         # Don't send the signal for deleted files.
         if fieldfile:
-            file_post_save.send_robust(sender=sender, fieldfile=fieldfile)
+            file_post_save.send(sender=sender, fieldfile=fieldfile)
