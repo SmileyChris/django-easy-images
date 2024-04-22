@@ -265,7 +265,7 @@ This signal is triggered whenever an image element is missing and was not alread
 It can be used to process the queue in a task using celery or another task runner. Here's an example `tasks.py`:
 
 ```python
-from easy_images.management import process_queue
+from easy_images.management.process_queue import process_queue
 
 @app.task
 def build_img_queue():
@@ -285,5 +285,8 @@ class MyAppConfig(AppConfig):
     def ready(self):
         from my_app.tasks import build_img_queue
 
-        queued_img.connect(build_img_queue.delay)
+        # Kick off build task as soon as any image is queued.
+        queued_img.connect(lambda **kwargs: build_img_queue.delay(), weak=False)
+        # Also start the build task as soon as the app is ready in case there are already queued images.
+        build_img_queue.delay()
 ```
