@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
+from django.db.models import Count, Q
 
 from easy_images.management.process_queue import process_queue
-from easy_images.models import EasyImage
+from easy_images.models import EasyImage, ImageStatus
 
 
 class Command(BaseCommand):
@@ -27,13 +28,23 @@ class Command(BaseCommand):
         if verbosity:
             self.stdout.write("Building queued <img> thumbnails...")
         if not force and verbosity:
-            skipping = (
-                EasyImage.objects.exclude(started_generating=None)
-                .filter(image="")
-                .count()
+            counts = EasyImage.objects.filter(image="").aggregate(
+                building=Count("pk", filter=Q(status=ImageStatus.BUILDING)),
+                source_errors=Count("pk", filter=Q(status=ImageStatus.SOURCE_ERROR)),
+                build_errors=Count("pk", filter=Q(status=ImageStatus.BUILD_ERROR)),
             )
-            if skipping:
-                self.stdout.write(f"Skipping {skipping} marked as being generated")
+            if counts["building"]:
+                self.stdout.write(
+                    f"Skipping {counts['building']} marked as already building..."
+                )
+            if counts["source_errors"]:
+                self.stdout.write(
+                    f"Skipping {counts['source_errors']} with source errors..."
+                )
+            if counts["build_errors"]:
+                self.stdout.write(
+                    f"Skipping {counts['build_errors']} with build errors..."
+                )
         if verbosity:
             self.stdout.flush()
         built = process_queue(force=bool(force))

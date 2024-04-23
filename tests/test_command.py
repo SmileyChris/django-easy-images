@@ -6,10 +6,9 @@ from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.core.management import call_command
 from django.test import override_settings
-from django.utils import timezone
 
 from easy_images.engine import vips_to_django
-from easy_images.models import EasyImage, get_storage_name
+from easy_images.models import EasyImage, ImageStatus, get_storage_name
 from pyvips import Image
 
 
@@ -27,17 +26,27 @@ No <img> thumbnails required building
 @pytest.mark.django_db
 def test_queue():
     EasyImage.objects.create(args={}, name="1")
-    EasyImage.objects.create(started_generating=timezone.now(), args={}, name="3")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="4")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="5")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="6")
+    EasyImage.objects.create(status=ImageStatus.BUILDING, args={}, name="3")
+    EasyImage.objects.create(status=ImageStatus.BUILD_ERROR, args={}, name="4")
+    EasyImage.objects.create(status=ImageStatus.SOURCE_ERROR, args={}, name="5")
+    for name in "678":
+        EasyImage.objects.create(
+            image="test",
+            status=ImageStatus.BUILT,
+            width=800,
+            height=600,
+            args={},
+            name=name,
+        )
     EasyImage.objects.create(args={}, name="2")
     test_output = StringIO()
     with mock.patch("easy_images.models.EasyImage.build", return_value=True):
         call_command("build_img_queue", stdout=test_output)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
-Skipping 1 marked as being generated
+Skipping 1 marked as already building...
+Skipping 1 with source errors...
+Skipping 1 with build errors...
 Successfully built 2 <img> thumbnails
 """
     )
@@ -46,16 +55,24 @@ Successfully built 2 <img> thumbnails
 @pytest.mark.django_db
 def test_force():
     EasyImage.objects.create(args={}, name="1")
-    EasyImage.objects.create(started_generating=timezone.now(), args={}, name="3")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="4")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="5")
-    EasyImage.objects.create(image="test", width=800, height=600, args={}, name="6")
+    EasyImage.objects.create(status=ImageStatus.BUILDING, args={}, name="2")
+    EasyImage.objects.create(status=ImageStatus.BUILD_ERROR, args={}, name="3")
+    EasyImage.objects.create(status=ImageStatus.SOURCE_ERROR, args={}, name="4")
+    for name in "567":
+        EasyImage.objects.create(
+            image="test",
+            status=ImageStatus.BUILT,
+            width=800,
+            height=600,
+            args={},
+            name=name,
+        )
     test_output = StringIO()
     with mock.patch("easy_images.models.EasyImage.build", return_value=True):
         call_command("build_img_queue", stdout=test_output, force=True)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
-Successfully built 2 <img> thumbnails
+Successfully built 4 <img> thumbnails
 """
     )
 

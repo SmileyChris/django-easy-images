@@ -12,6 +12,7 @@ from django.core.files.storage.handler import InvalidStorageError
 from django.db import models
 from django.db.models.fields.files import FieldFile, ImageFieldFile
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from easy_images import engine
 from easy_images.options import ParsedOptions
@@ -60,10 +61,20 @@ class EasyImageManager(models.Manager["EasyImage"]):
         return self.filter(name=name, storage=storage)
 
 
+class ImageStatus(models.IntegerChoices):
+    QUEUED = 0, _("Queued")
+    BUILDING = 1, _("Building")
+    BUILT = 2, _("Built")
+    SOURCE_ERROR = 3, _("Source error")
+    BUILD_ERROR = 4, _("Build error")
+
+
 class EasyImage(models.Model):
     id = models.UUIDField(primary_key=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
-    started_generating = models.DateTimeField(null=True)
+    status = models.PositiveSmallIntegerField(choices=ImageStatus.choices, default=0)
+    error_count = models.PositiveSmallIntegerField(default=0)
+    status_changed_date = models.DateTimeField(null=True)
     storage = models.CharField(max_length=512)
     name = models.CharField(max_length=512)
     args = models.JSONField[dict[str, str]]()
@@ -97,11 +108,11 @@ class EasyImage(models.Model):
         # TODO: maybe we should catch exceptions with the build and save the error?
         if force:
             EasyImage.objects.filter(pk=self.pk).update(
-                started_generating=timezone.now()
+                status=ImageStatus.BUILDING, status_changed_date=timezone.now()
             )
         elif self.image or not EasyImage.objects.filter(
-            pk=self.pk, started_generating=None
-        ).update(started_generating=timezone.now()):
+            pk=self.pk, status=ImageStatus.QUEUED
+        ).update(status=ImageStatus.BUILDING, status_changed_date=timezone.now()):
             # Already built (or being generated elsewhere).
             return False
         if not source_img:
@@ -140,5 +151,7 @@ class EasyImage(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["storage", "name"]),
+            models.Index(
+                fields=["storage", "name"], name="easy_images_storage_and_name"
+            ),
         ]
