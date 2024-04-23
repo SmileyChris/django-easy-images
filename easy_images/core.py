@@ -3,8 +3,9 @@ from __future__ import annotations
 import mimetypes
 from typing import TYPE_CHECKING, NamedTuple, cast
 
-from django.db.models import FileField, ImageField, Model
+from django.db.models import F, FileField, ImageField, Model
 from django.db.models.fields.files import FieldFile
+from django.utils import timezone
 from django.utils.html import escape
 from typing_extensions import Unpack
 
@@ -97,7 +98,7 @@ class BoundImg:
         build: BuildChoices = None,
     ):
         from . import engine
-        from .models import EasyImage
+        from .models import EasyImage, ImageStatus
 
         self.file = file
         self.img = img
@@ -209,15 +210,26 @@ class BoundImg:
             if self.base:
                 build_options.append((self.base, ParsedOptions(**options)))
             if build_options:
-                source_img = engine.efficient_load(
-                    file=self.file,
-                    options=[opts[1] for opts in build_options],
-                )
-                for im, opts in build_options:
-                    im.build(
-                        source_img=source_img,
-                        options=opts,
+                try:
+                    source_img = engine.efficient_load(
+                        file=self.file,
+                        options=[opts[1] for opts in build_options],
                     )
+                except Exception:
+                    for im, opts in build_options:
+                        EasyImage.objects.filter(
+                            pk=im.pk, status_changed_date=im.status_changed_date
+                        ).update(
+                            error_count=F("error_count") + 1,
+                            status=ImageStatus.SOURCE_ERROR,
+                            status_changed_date=timezone.now(),
+                        )
+                else:
+                    for im, opts in build_options:
+                        im.build(
+                            source_img=source_img,
+                            options=opts,
+                        )
 
         if all(srcset_item.thumb.image for srcset_item in srcset):
             self.srcset = srcset

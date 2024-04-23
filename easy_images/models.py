@@ -105,46 +105,63 @@ class EasyImage(models.Model):
         options: ParsedOptions | None = None,
         force=False,
     ):
-        # TODO: maybe we should catch exceptions with the build and save the error?
+        now = timezone.now()
         if force:
             EasyImage.objects.filter(pk=self.pk).update(
-                status=ImageStatus.BUILDING, status_changed_date=timezone.now()
+                status=ImageStatus.BUILDING, status_changed_date=now
             )
         elif self.image or not EasyImage.objects.filter(
             pk=self.pk, status=ImageStatus.QUEUED
-        ).update(status=ImageStatus.BUILDING, status_changed_date=timezone.now()):
+        ).update(status=ImageStatus.BUILDING, status_changed_date=now):
             # Already built (or being generated elsewhere).
             return False
+        self.status = ImageStatus.BUILDING
+        self.status_changed_date = now
         if not source_img:
-            storage = storages[self.storage]
-            file = storage.open(self.name)
-            source_img = engine.efficient_load(file, options)
-        if not options:
-            options = ParsedOptions(**self.args)
-
-        if size := options.size:
-            scale_args = {}
-            if options.window:
-                scale_args["focal_window"] = options.window
-            if options.crop:
-                scale_args["crop"] = options.crop
-            img = engine.scale_image(source_img, size, **scale_args)
-        else:
-            img = source_img
-        self.height = img.height
-        self.width = img.width
-        extension = {
-            "image/jpeg": ".jpg",
-            "image/webp": ".webp",
-            "image/avif": ".avif",
-        }.get(options.mimetype or "", ".jpg")
-        file = engine.vips_to_django(
-            img, f"{self.id.hex}{extension}", quality=options.quality
-        )
+            try:
+                storage = storages[self.storage]
+                file = storage.open(self.name)
+                source_img = engine.efficient_load(file, options)
+            except Exception:
+                self.error_count += 1
+                self.status = ImageStatus.SOURCE_ERROR
+                self.status_changed_date = timezone.now()
+                self.save()
+                return False
+        try:
+            if not options:
+                options = ParsedOptions(**self.args)
+            if size := options.size:
+                scale_args = {}
+                if options.window:
+                    scale_args["focal_window"] = options.window
+                if options.crop:
+                    scale_args["crop"] = options.crop
+                img = engine.scale_image(source_img, size, **scale_args)
+            else:
+                img = source_img
+            self.height = img.height
+            self.width = img.width
+            extension = {
+                "image/jpeg": ".jpg",
+                "image/webp": ".webp",
+                "image/avif": ".avif",
+            }.get(options.mimetype or "", ".jpg")
+            file = engine.vips_to_django(
+                img, f"{self.id.hex}{extension}", quality=options.quality
+            )
+        except Exception:
+            self.error_count += 1
+            self.status = ImageStatus.BUILD_ERROR
+            self.status_changed_date = timezone.now()
+            self.save()
+            return False
         self.image = cast(
             ImageFieldFile,  # Avoid some typing issues
             file,
         )
+        self.status = ImageStatus.BUILT
+        self.status_changed_date = timezone.now()
         self.save()
         file.close()
         return True
