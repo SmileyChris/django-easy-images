@@ -53,6 +53,38 @@ Successfully built 2 <img> thumbnails
 
 
 @pytest.mark.django_db
+def test_retry():
+    EasyImage.objects.create(args={}, name="1")
+    EasyImage.objects.create(status=ImageStatus.BUILDING, args={}, name="2")
+    EasyImage.objects.create(
+        status=ImageStatus.BUILD_ERROR, args={}, name="3", error_count=1
+    )
+    EasyImage.objects.create(
+        status=ImageStatus.SOURCE_ERROR, args={}, name="4", error_count=2
+    )
+    for name in "567":
+        EasyImage.objects.create(
+            image="test",
+            status=ImageStatus.BUILT,
+            width=800,
+            height=600,
+            args={},
+            name=name,
+        )
+    test_output = StringIO()
+    with mock.patch("easy_images.models.EasyImage.build", return_value=True):
+        call_command("build_img_queue", stdout=test_output, retry=1)
+    assert test_output.getvalue() == (
+        """Building queued <img> thumbnails...
+Skipping 1 marked as already building...
+Retrying 0 with source errors (1 with more than 1 retries skipped)...
+Retrying 1 with build errors...
+Successfully built 2 <img> thumbnails
+"""
+    )
+
+
+@pytest.mark.django_db
 def test_force():
     EasyImage.objects.create(args={}, name="1")
     EasyImage.objects.create(status=ImageStatus.BUILDING, args={}, name="2")
