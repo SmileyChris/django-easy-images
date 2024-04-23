@@ -1,6 +1,6 @@
 # Easy images
 
-Easily build responsive HTML `<img>` tags by thumbnailing Django images.
+Easily build responsive HTML `<img>` tags by thumbnailing Django images using the VIPS fast image processing library.
 
 When an `<img>` is generated, any thumbnails that don't already exist are queued for building (if aren't already queued) and left out of the HTML.
 For example, an image built from `Img(width="md")` will generate:
@@ -163,7 +163,7 @@ Limit the width of the image. Either use an integer, or one of the following tai
 
 #### `ratio`
 
-The aspect ratio of the image to generate.
+The aspect ratio of the image to build.
 
 Use a float representing the ratio (e.g. `4/5`) or one of the following strings: "square", "video" (meaning 16/9), "video_vertical", "golden" (using the golden ratio), "golden_vertical".
 
