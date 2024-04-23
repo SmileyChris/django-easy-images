@@ -1,4 +1,4 @@
-# Easy images
+# Django easy images
 
 Easily build responsive HTML `<img>` tags by thumbnailing Django images using the VIPS fast image processing library.
 
@@ -24,10 +24,10 @@ But after the images are built, the HTML will be:
 
 ## Installation & Configuration
 
-To install easy-images, simply run the following command:
+To install django-easy-images, simply run the following command:
 
 ```bash
-pip install easy-images
+pip install django-easy-images
 ```
 
 Once installed, add the `easy_images` app in your Django settings file:
