@@ -25,6 +25,11 @@ def find_uncommitted_filefields(sender, instance, **kwargs):
     containing all uncommitted ``FileField``s, which can then be used by the
     :func:`signal_committed_filefields` post_save handler.
     """
+    from easy_images.models import EasyImage
+
+    if issubclass(sender, EasyImage):
+        # Don't record uncommitted fields for EasyImage instances.
+        return
     uncommitted = instance._uncommitted_filefields = []
 
     fields = [f for f in sender._meta.get_fields() if isinstance(f, FileField)]

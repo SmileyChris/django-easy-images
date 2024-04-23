@@ -44,7 +44,7 @@ class EasyImageManager(models.Manager["EasyImage"]):
         hash.update(f":{storage}:{name}".encode())
         return UUID(bytes=hash.digest()[:16])
 
-    def from_file(self, file: FieldFile, options: ParsedOptions) -> EasyImage:
+    def from_file(self, file: FieldFile, options: ParsedOptions):
         name, storage = image_name_and_storage(file)
         pk = self.hash(name=name, storage=storage, options=options)
         return self.get_or_create(
@@ -54,7 +54,7 @@ class EasyImageManager(models.Manager["EasyImage"]):
                 name=name,
                 args=options.to_dict(),
             ),
-        )[0]
+        )
 
     def all_for_file(self, file: FieldFile):
         name, storage = image_name_and_storage(file)

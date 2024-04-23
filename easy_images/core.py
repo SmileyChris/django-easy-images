@@ -50,9 +50,13 @@ class Img:
         return Img(**new_options)
 
     def __call__(
-        self, source: FieldFile, alt: str | None = None, build: BuildChoices = None
+        self,
+        source: FieldFile,
+        alt: str | None = None,
+        build: BuildChoices = None,
+        send_signal=True,
     ):
-        return BoundImg(source, alt=alt, img=self, build=build)
+        return BoundImg(source, alt=alt, img=self, build=build, send_signal=send_signal)
 
     def queue(
         self,
@@ -74,7 +78,7 @@ class Img:
                         return
                 elif not isinstance(fieldfile, fields):
                     return
-            self(fieldfile, build=build)
+            self(fieldfile, build=build, send_signal=False)
 
         file_post_save.connect(handle_file, sender=model, weak=False)
 
@@ -96,6 +100,7 @@ class BoundImg:
         alt: str | None,
         img: Img,
         build: BuildChoices = None,
+        send_signal: bool,
     ):
         from . import engine
         from .models import EasyImage, ImageStatus
@@ -107,8 +112,8 @@ class BoundImg:
         if "width" in img.options and img.options["width"] is not None:
             base_options = ParsedOptions(file.instance, **img.options)
             base_options.mimetype = "image/jpeg"
-            self.base = EasyImage.objects.from_file(file, base_options)
-            if self.base.image and not build:
+            self.base, created = EasyImage.objects.from_file(file, base_options)
+            if created and not build:
                 queued = True
             base_width = base_options.width
         else:
@@ -152,48 +157,41 @@ class BoundImg:
                     max_options = media_options
                     max_width = max_width
                 sizes_attr.append(f"{media} {parsed_options.width}px")
-                srcset.append(
-                    SrcSetItem(
-                        EasyImage.objects.from_file(
-                            file, ParsedOptions(file.instance, **media_options)
-                        ),
-                        media_options,
-                    )
+                instance, created = EasyImage.objects.from_file(
+                    file, ParsedOptions(file.instance, **media_options)
                 )
-            srcset.append(
-                SrcSetItem(
-                    EasyImage.objects.from_file(
-                        file, ParsedOptions(file.instance, **base_options)
-                    ),
-                    base_options,
-                )
+
+                srcset.append(SrcSetItem(instance, media_options))
+                if created and build != "srcset":
+                    queued = True
+            instance, created = EasyImage.objects.from_file(
+                file, ParsedOptions(file.instance, **base_options)
             )
+            srcset.append(SrcSetItem(instance, base_options))
+            if created and build != "srcset":
+                queued = True
             sizes_attr.append(f"{max_width}px")
             max_density = max(densities) if densities else 1
             if max_density > 1:
                 # Find the max size and multiply it by the max density to get an extra size that should be generated.
                 high_density_options = max_options.copy()
                 high_density_options["width_multiplier"] = max_density
-                srcset.append(
-                    SrcSetItem(
-                        EasyImage.objects.from_file(
-                            file, ParsedOptions(file.instance, **high_density_options)
-                        ),
-                        high_density_options,
-                    )
+                instance, created = EasyImage.objects.from_file(
+                    file, ParsedOptions(file.instance, **high_density_options)
                 )
+                srcset.append(SrcSetItem(instance, high_density_options))
+                if created and build != "srcset":
+                    queued = True
         elif densities:
             for density in densities:
                 alt_options = options.copy()
                 alt_options["width_multiplier"] = density
-                srcset.append(
-                    SrcSetItem(
-                        EasyImage.objects.from_file(
-                            file, ParsedOptions(file.instance, **alt_options)
-                        ),
-                        alt_options,
-                    )
+                instance, created = EasyImage.objects.from_file(
+                    file, ParsedOptions(file.instance, **alt_options)
                 )
+                srcset.append(SrcSetItem(instance, alt_options))
+                if created and build != "srcset":
+                    queued = True
 
         if build:
             build_options: list[tuple[EasyImage, ParsedOptions]] = []
@@ -235,7 +233,6 @@ class BoundImg:
             self.srcset = srcset
         elif srcset:
             self.srcset = []
-            queued = True
         self.sizes = ", ".join(sizes_attr)
 
         if isinstance(alt, str):
@@ -245,7 +242,7 @@ class BoundImg:
         else:
             self.alt = ""
 
-        if queued:
+        if queued and send_signal:
             queued_img.send(sender=img, instance=file)
 
     def as_html(self):
