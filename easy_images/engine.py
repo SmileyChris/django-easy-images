@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import io
 import math
 import os
 from mimetypes import guess_type
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from django.core.files import File
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.db.models.fields.files import FieldFile
 
 from easy_images.core import ParsedOptions
-from pyvips import Image
+
+if TYPE_CHECKING:
+    from pyvips import Image
 
 
 def scale_image(
@@ -118,6 +123,8 @@ def efficient_load(
 
 
 def _new_image(file: str | Path | File, access, **kwargs):
+    from pyvips import Image
+
     path = None
     if isinstance(file, File):
         if isinstance(file, FieldFile):
