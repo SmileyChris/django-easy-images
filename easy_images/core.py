@@ -64,11 +64,17 @@ class Img:
         *,
         fields: type[FileField] | list[str] | None = ImageField,
         build: BuildChoices = None,
+        send_signal: bool = True,
     ):
         """
         Listen for saves to files on a specific model.
 
         By default, this will listen for saves to any ImageField on the model.
+
+        :param model: The model to listen for saves on.
+        :param fields: The field or fields to listen for saves on. If None, listen for saves on any ImageField.
+        :param build: The build option to use when building the image.
+        :param send_signal: Whether to send the queued_img signal if there are versions of the image that need to be built.
         """
 
         def handle_file(fieldfile: FieldFile, **kwargs):
