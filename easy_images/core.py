@@ -135,12 +135,11 @@ class BoundImg:
         sizes_attr: list[str] = []
 
         sizes = img.options.get("sizes")
-        base_options = options.copy()
         max_width = base_width
         if sizes and max_width:
-            base_options = cast(Options, base_options).copy()
-            base_options["srcset_width"] = max_width
-            max_options = base_options
+            img_options = cast(Options, options).copy()
+            img_options["srcset_width"] = max_width
+            max_options = img_options
             for media, size in sizes.items():
                 media_options = options.copy()
                 if isinstance(size, dict):
@@ -165,9 +164,9 @@ class BoundImg:
                 if created and build != "srcset":
                     queued = True
             instance, created = EasyImage.objects.from_file(
-                file, ParsedOptions(file.instance, **base_options)
+                file, ParsedOptions(file.instance, **img_options)
             )
-            srcset.append(SrcSetItem(instance, base_options))
+            srcset.append(SrcSetItem(instance, img_options))
             if created and build != "srcset":
                 queued = True
             sizes_attr.append(f"{max_width}px")
@@ -206,7 +205,7 @@ class BoundImg:
                         )
                     )
             if self.base:
-                build_options.append((self.base, ParsedOptions(**options)))
+                build_options.append((self.base, base_options))
             if build_options:
                 try:
                     source_img = engine.efficient_load(
