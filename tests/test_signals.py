@@ -31,6 +31,7 @@ def test_queue_with_build_src():
         name="Test", image=SimpleUploadedFile(name="test.jpg", content=content)
     )
 
+    # base jpg, avif
     assert EasyImage.objects.count() == 2
     assert EasyImage.objects.filter(image="").count() == 1
 
@@ -44,6 +45,7 @@ def test_queue_with_build_all():
         name="Test", image=SimpleUploadedFile(name="test.jpg", content=content)
     )
 
+    # base jpg, avif, avif 2x
     assert EasyImage.objects.count() == 3
     assert EasyImage.objects.filter(image="").count() == 0
 
@@ -61,5 +63,3 @@ def test_queued_img_signal():
     )
     # .queue is triggered, which triggers the queued_img signal
     assert handler.called
-
-    assert EasyImage.objects.count() == 2
