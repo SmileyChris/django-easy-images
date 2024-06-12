@@ -84,7 +84,7 @@ class Img:
                         return
                 elif not isinstance(fieldfile, fields):
                     return
-            self(fieldfile, build=build, send_signal=False)
+            self(fieldfile, build=build, send_signal=send_signal)
 
         file_post_save.connect(handle_file, sender=model, weak=False)
 
@@ -284,3 +284,6 @@ class BoundImg:
 
     def base_url(self):
         return self.base.image.url if self.base and self.base.image else self.file.url
+
+    def __str__(self):
+        return self.base_url()
