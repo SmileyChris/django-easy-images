@@ -181,8 +181,8 @@ def vips_to_django(
     )
 
 
-if __name__ == "__main__":
-    import sys
+def _test():
+    from pyvips import Image
 
     image = Image.new_from_file("example.jpg")
     print(f"Original image size: {image.width}x{image.height}")
@@ -190,8 +190,8 @@ if __name__ == "__main__":
     image = efficient_load("example.jpg", [ParsedOptions(width=100, ratio="video")])
     print(f"Efficiently loaded image size: {image.width}x{image.height}")
 
-    sys.exit()
 
+def _test2():
     from PIL import Image as PILImage
 
     image = Image.new_from_file("example.jpg")
@@ -202,3 +202,8 @@ if __name__ == "__main__":
     # Convert buffer to PIL image
     pil_image = PILImage.open(io.BytesIO(buffer))
     pil_image.show()
+
+
+if __name__ == "__main__":
+    while True:
+        _test()
