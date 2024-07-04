@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def scale_image(
-    img,
+    img: Image,
     target: tuple[int, int],
     /,
     crop: tuple[float, float] | bool | None = None,
