@@ -5,7 +5,7 @@ from django.template.base import token_kwargs
 
 from easy_images.core import Img
 from easy_images.options import ParsedOptions
-from easy_images.types import ImgOptions
+from easy_images.types_ import ImgOptions
 
 register = template.Library()
 

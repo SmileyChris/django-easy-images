@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import absolute_import, annotations
 
 import re
 from typing import Literal, TypeAlias, TypedDict

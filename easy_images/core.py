@@ -11,7 +11,7 @@ from typing_extensions import Unpack
 
 from easy_images.options import ParsedOptions
 from easy_images.signals import file_post_save, queued_img
-from easy_images.types import BuildChoices, ImgOptions, Options
+from easy_images.types_ import BuildChoices, ImgOptions, Options
 
 if TYPE_CHECKING:
     from easy_images.models import EasyImage
