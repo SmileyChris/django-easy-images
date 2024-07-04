@@ -15,8 +15,8 @@ But after the images are built, the HTML will be:
 <img
   src="/media/img/thumbs/f52fbd32b2b3b86ff88ef6c490628285.jpg"
   srcset="
-    /media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.avif,
-    /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.avif 2x
+    /media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.webp,
+    /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.webp 2x
   "
   alt="Profile photo for John Doe"
 >
@@ -99,8 +99,8 @@ As you can see, `thumb` is an `Img` instance that is used to generate an HTML `<
 <img
   src="/media/img/thumbs/f52fbd32b2b3b86ff88ef6c490628285.jpg"
   srcset="
-    /media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.avif,
-    /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.avif 2x
+    /media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.webp,
+    /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.webp 2x
   "
   alt="Profile photo for John Doe"
 />
@@ -221,12 +221,13 @@ print(img_with_sizes(model_instance.image, build="srcset").as_html())
 will output:
 
 ```html
-<img src="/media/img/thumbs/08efa8f7b11b7e9b24a037bb3f216369.jpg" srcset="/media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.avif 100w, /media/img/thumbs/08efa8f7b11b7e9b24a037bb3f216369.avif 300w, /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.avif 450w, /media/img/thumbs/cfca1aebe161e09926c86f76d4e2f1b4.avif 600w" sizes="(print) 450px, (max-width: 800) 100px" alt="">
+<img src="/media/img/thumbs/08efa8f7b11b7e9b24a037bb3f216369.jpg" srcset="/media/img/thumbs/18183dd9009f2b7e1b44f9c4af287589.webp 100w, /media/img/thumbs/08efa8f7b11b7e9b24a037bb3f216369.webp 300w, /media/img/thumbs/fb8c2e2b85ca81eb4350199faddd983c.webp 450w, /media/img/thumbs/cfca1aebe161e09926c86f76d4e2f1b4.webp 600w" sizes="(print) 450px, (max-width: 800) 100px" alt="">
 ```
 
 #### `format`
 
-The image format to build the `srcset` versions with. The valid values are `"avif"` *(default)*, `"webp"` or `"jpeg"`.
+The image format to build the `srcset` versions with. The valid values are `"webp"` *(default)*, `"avif"` or `"jpeg"`. 
+Note that AVIF uses a lot of memory to build images. 
 
 The base `src` image format will always be built as a JPEG for backwards compatibility.
 

@@ -18,7 +18,7 @@ def test_as_html():
         height=600,
     )
     assert generator(source).as_html() == (
-        '<img src="/image/jpeg100.image" srcset="/image/avif100.image, /image/avif200.image 2x" alt="">'
+        '<img src="/image/jpeg100.image" srcset="/image/webp100.image, /image/webp200.image 2x" alt="">'
     )
 
 
@@ -34,6 +34,6 @@ def test_sizes():
     )
     assert generator(source).as_html() == (
         '<img src="/image/jpeg200.image"'
-        ' srcset="/image/avif100.image 100w, /image/avif200.image 200w, /image/avif400.image 400w"'
+        ' srcset="/image/webp100.image 100w, /image/webp200.image 200w, /image/webp400.image 400w"'
         ' sizes="(max-width: 800px) 100px, 200px" alt="">'
     )

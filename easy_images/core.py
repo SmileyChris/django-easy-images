@@ -25,7 +25,7 @@ option_defaults: ImgOptions = {
     "ratio": "video",
     "crop": True,
     "densities": [2],
-    "format": "avif",
+    "format": "webp",
 }
 
 
