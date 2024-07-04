@@ -1,1 +1,1 @@
-from .vimage import *
+from .vimage import *  # noqa
