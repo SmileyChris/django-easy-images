@@ -50,3 +50,14 @@ def test_hash():
         ParsedOptions(quality=80).hash().hexdigest()
         == "cce6431a80fe3a84c7ea9f6c5293cbce4ed8848349bb0f2182eb6bb0d7a19f78"
     )
+
+
+def test_str():
+    assert (
+        str(ParsedOptions(width=100, ratio="video"))
+        == '{"crop": null, "mimetype": null, "quality": 80, "ratio": 1.7777777777777777, "width": 100, "window": null}'
+    )
+    assert (
+        str(ParsedOptions(width=100, cover=False))
+        == '{"cover": false, "crop": null, "mimetype": null, "quality": 80, "ratio": null, "width": 100, "window": null}'
+    )

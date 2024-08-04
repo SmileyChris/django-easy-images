@@ -17,13 +17,13 @@ if TYPE_CHECKING:
     from easy_images.models import EasyImage
 
 
-format_map = {"avif": "image/avif", "webp": "image/webp"}
-
+format_map = {"avif": "image/avif", "webp": "image/webp", "jpeg": "image/jpeg"}
 
 option_defaults: ImgOptions = {
     "quality": 80,
     "ratio": "video",
     "crop": True,
+    "cover": False,
     "densities": [2],
     "format": "webp",
 }

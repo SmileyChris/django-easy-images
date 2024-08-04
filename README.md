@@ -179,7 +179,16 @@ Use a boolean, or tuple of two floats, or the comma separated string equivalent.
 
 You can also use the following keywords: `tl` (top left), `tr` (top right), `bl` (bottom left), `br` (bottom right), `l`, `r`, `t` or `b`. This will set the percentage to 0 or 100 for the appropriate axis.
 
-If crop is `False`, the image will be resized so that it will cover the requested ratio but not cropped down. This is useful when you want to handle positioning in CSS using `object-fit`.
+If crop is `False`, the image will be resized so that it will cover the requested ratio but not cropped down.
+This is useful when you want to handle positioning in CSS using `object-fit`.
+
+#### `cover`
+
+Whether to resize the image to cover the requested ratio or to contain it (when not cropping).
+
+The default is `True`, meaning the image will be resized down to cover the requested ratio (which means the image dimensions may be larger than the requested dimensions).
+
+To rezise the image to always fit within the requested dimensions, set `cover=False`.
 
 #### `focal_window`
 

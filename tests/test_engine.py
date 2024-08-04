@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import (
     SimpleUploadedFile,
 )
 
-from easy_images.engine import efficient_load
+from easy_images.engine import efficient_load, scale_image
 from easy_images.options import ParsedOptions
 from pyvips import Image
 
@@ -51,3 +51,13 @@ def test_efficient_load_from_memory():
     file = SimpleUploadedFile("test.jpg", image.write_to_buffer(".jpg[Q=90]"))
     e_image = efficient_load(file, [ParsedOptions(width=100, ratio="video")])
     assert (e_image.width, e_image.height) == (500, 500)
+
+
+def test_scale():
+    source = Image.black(1000, 1000)
+    scaled_cover = scale_image(source, (400, 500))
+    assert (scaled_cover.width, scaled_cover.height) == (500, 500)
+    scaled = scale_image(source, (400, 500), cover=False)
+    assert (scaled.width, scaled.height) == (400, 400)
+    cropped = scale_image(source, (400, 500), crop=True)
+    assert (cropped.width, cropped.height) == (400, 500)

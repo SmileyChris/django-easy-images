@@ -39,14 +39,17 @@ ratio_options: dict[str, float] = {
 
 
 class ParsedOptions:
-    __slots__ = ("quality", "crop", "window", "width", "ratio", "mimetype")
+    __slots__ = ("quality", "crop", "cover", "window", "width", "ratio", "mimetype")
 
     quality: int
     crop: tuple[float, float] | None
+    cover: bool
     window: tuple[float, float, float, float] | None
     width: int | None
     ratio: float | None
     mimetype: str | None
+
+    _defaults = {"cover": True}
 
     def __init__(self, bound=None, string="", /, **options):
         if string:
@@ -64,9 +67,12 @@ class ParsedOptions:
                 value = value.resolve(context)
             if value or value == 0:
                 parse_func = getattr(self, f"parse_{key}")
-                setattr(self, key, parse_func(value, **options))
+                value = parse_func(value, **options)
+            elif key in self._defaults:
+                value = self._defaults[key]
             else:
-                setattr(self, key, 80 if key == "quality" else None)
+                value = 80 if key == "quality" else None
+            setattr(self, key, value)
 
     @classmethod
     def from_str(cls, s: str):
@@ -102,6 +108,12 @@ class ParsedOptions:
             except (ValueError, TypeError):
                 pass
         raise ValueError(f"Invalid crop value {value}")
+
+    @staticmethod
+    def parse_cover(value, **options) -> bool:
+        if not isinstance(value, bool):
+            raise ValueError(f"Invalid cover value {value}")
+        return value
 
     @staticmethod
     def parse_window(value, **options) -> tuple[float, float, float, float]:
@@ -166,7 +178,11 @@ class ParsedOptions:
         return self.width, int(self.width / self.ratio)
 
     def to_dict(self):
-        return {key: getattr(self, key) for key in self.__slots__}
+        return {
+            key: getattr(self, key)
+            for key in self.__slots__
+            if key not in self._defaults or getattr(self, key) != self._defaults[key]
+        }
 
     def source_x(self, source_x: int):
         if self.window:

@@ -137,6 +137,8 @@ class EasyImage(models.Model):
                     scale_args["focal_window"] = options.window
                 if options.crop:
                     scale_args["crop"] = options.crop
+                if options.cover:
+                    scale_args["cover"] = options.cover
                 img = engine.scale_image(source_img, size, **scale_args)
             else:
                 img = source_img

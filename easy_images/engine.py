@@ -22,6 +22,7 @@ def scale_image(
     target: tuple[int, int],
     /,
     crop: tuple[float, float] | bool | None = None,
+    cover: bool = True,
     focal_window: tuple[float, float, float, float] | None = None,
 ):
     """
@@ -30,8 +31,15 @@ def scale_image(
     """
     w, h = img.width, img.height
 
-    # Size image down to cover the dimensions
-    scale = max(target[0] / w, target[1] / h)
+    if crop:
+        cover = True
+
+    if cover:
+        # Size image down to cover the dimensions
+        scale = max(target[0] / w, target[1] / h)
+    else:
+        # Size image to contain the dimensions
+        scale = min(target[0] / w, target[1] / h)
 
     # Focal window scaling
     if focal_window:
@@ -44,7 +52,10 @@ def scale_image(
         if f_right - f_left > target[0] and f_bottom - f_top > target[1]:
             img = img.extract_area(f_left, f_top, f_right - f_left, f_bottom - f_top)
             w, h = img.width, h
-            scale = max(target[0] / w, target[1] / h)
+            if cover:
+                scale = max(target[0] / w, target[1] / h)
+            else:
+                scale = min(target[0] / w, target[1] / h)
             focal_window = None
         # Otherwise, if cropping then set the crop focal point to the center of the
         # focal window.
