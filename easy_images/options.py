@@ -62,7 +62,7 @@ class ParsedOptions:
             value = options.get(key)
             if isinstance(value, Variable):
                 value = value.resolve(context)
-            if value and value != 0:
+            if value or value == 0:
                 parse_func = getattr(self, f"parse_{key}")
                 setattr(self, key, parse_func(value, **options))
             else:
