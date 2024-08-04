@@ -62,10 +62,10 @@ class ParsedOptions:
             for key, value in bound.__dict__.items():
                 context[key] = value
         for key in self.__slots__:
-            value = options.get(key)
-            if isinstance(value, Variable):
-                value = value.resolve(context)
-            if value or value == 0:
+            if key in options:
+                value = options[key]
+                if isinstance(value, Variable):
+                    value = value.resolve(context)
                 parse_func = getattr(self, f"parse_{key}")
                 value = parse_func(value, **options)
             elif key in self._defaults:
@@ -92,7 +92,9 @@ class ParsedOptions:
             raise ValueError(f"Invalid quality value {value}")
 
     @staticmethod
-    def parse_crop(value, **options) -> tuple[float, float]:
+    def parse_crop(value, **options) -> tuple[float, float] | None:
+        if not value:
+            return None
         if value is True:
             return (0.5, 0.5)
         try:
