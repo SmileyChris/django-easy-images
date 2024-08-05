@@ -134,14 +134,13 @@ class EasyImage(models.Model):
             if not options:
                 options = ParsedOptions(**self.args)
             if size := options.size:
-                scale_args = {}
-                if options.window:
-                    scale_args["focal_window"] = options.window
-                if options.crop:
-                    scale_args["crop"] = options.crop
-                if options.cover:
-                    scale_args["cover"] = options.cover
-                img = engine.scale_image(source_img, size, **scale_args)
+                img = engine.scale_image(
+                    source_img,
+                    size,
+                    focal_window=options.window,
+                    crop=options.crop,
+                    cover=options.cover,
+                )
             else:
                 img = source_img
             self.height = img.height
