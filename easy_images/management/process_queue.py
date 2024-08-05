@@ -1,10 +1,14 @@
+import logging
+
 from django.db.models import Q
 from tqdm import tqdm
 
 from easy_images.models import EasyImage, ImageStatus
 
+logger = logging.getLogger(__name__)
 
-def process_queue(force=False, retry: int | None = None):
+
+def process_queue(force=False, retry: int | None = None, verbose=False):
     """
     Process the image queue, building images that need building.
 
@@ -24,8 +28,15 @@ def process_queue(force=False, retry: int | None = None):
         else:
             easy_images = easy_images.filter(queued)
 
+    total = easy_images.count()
+    if not total:
+        return None
+
     built = 0
-    for easy_image in tqdm(easy_images.iterator(), total=easy_images.count()):
-        if easy_image.build(force=force):
-            built += 1
+    for easy_image in tqdm(easy_images.iterator(), total=total):
+        try:
+            if easy_image.build(force=force, raise_error=verbose):
+                built += 1
+        except Exception:
+            logger.exception(f"Error building {easy_image}")
     return built

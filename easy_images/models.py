@@ -104,6 +104,7 @@ class EasyImage(models.Model):
         source_img: engine.Image | None = None,
         options: ParsedOptions | None = None,
         force=False,
+        raise_error=False,
     ):
         now = timezone.now()
         if force:
@@ -127,6 +128,8 @@ class EasyImage(models.Model):
                 self.status = ImageStatus.SOURCE_ERROR
                 self.status_changed_date = timezone.now()
                 self.save()
+                if raise_error:
+                    raise
                 return False
         try:
             if not options:
@@ -157,6 +160,8 @@ class EasyImage(models.Model):
             self.status = ImageStatus.BUILD_ERROR
             self.status_changed_date = timezone.now()
             self.save()
+            if raise_error:
+                raise
             return False
         self.image = cast(
             ImageFieldFile,  # Avoid some typing issues

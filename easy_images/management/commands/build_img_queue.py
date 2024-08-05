@@ -101,14 +101,13 @@ class Command(BaseCommand):
                     )
         if verbosity:
             self.stdout.flush()
-        built = process_queue(force=bool(force), retry=retry)
-        if not built:
+        built = process_queue(force=bool(force), retry=retry, verbose=verbosity > 1)
+        if built is None:
             if verbosity:
                 self.stdout.write("No <img> thumbnails required building")
             return
         self.stdout.write(
             self.style.SUCCESS(
-                f"Successfully built {built} <img>"
-                f" thumbnail{'' if built == 1 else 's'}"
+                f"Built {built} <img> thumbnail{'' if built == 1 else 's'}"
             )
         )
