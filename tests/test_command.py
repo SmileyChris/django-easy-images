@@ -47,7 +47,7 @@ def test_queue():
 Skipping 1 marked as already building...
 Skipping 1 with source errors...
 Skipping 1 with build errors...
-Successfully built 2 <img> thumbnails
+Built 2 <img> thumbnails
 """
     )
 
@@ -79,7 +79,7 @@ def test_retry():
 Skipping 1 marked as already building...
 Retrying 0 with source errors (1 with more than 1 retries skipped)...
 Retrying 1 with build errors...
-Successfully built 2 <img> thumbnails
+Built 2 <img> thumbnails
 """
     )
 
@@ -104,7 +104,7 @@ def test_force():
         call_command("build_img_queue", stdout=test_output, force=True)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
-Successfully built 4 <img> thumbnails
+Built 4 <img> thumbnails
 """
     )
 
