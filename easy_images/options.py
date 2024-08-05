@@ -62,7 +62,7 @@ class ParsedOptions:
             for key, value in bound.__dict__.items():
                 context[key] = value
         for key in self.__slots__:
-            if key in options:
+            if key in options and options[key] is not None:
                 value = options[key]
                 if isinstance(value, Variable):
                     value = value.resolve(context)
