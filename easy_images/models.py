@@ -107,12 +107,11 @@ class EasyImage(models.Model):
         raise_error=False,
     ):
         now = timezone.now()
+        image_qs = EasyImage.objects.filter(pk=self.pk)
         if force:
-            EasyImage.objects.filter(pk=self.pk).update(
-                status=ImageStatus.BUILDING, status_changed_date=now
-            )
-        elif self.image or not EasyImage.objects.filter(
-            pk=self.pk, status=ImageStatus.QUEUED
+            image_qs.update(status=ImageStatus.BUILDING, status_changed_date=now)
+        elif self.image or not image_qs.exclude(
+            models.Q(status=ImageStatus.BUILDING) | models.Q(status=ImageStatus.BUILT)
         ).update(status=ImageStatus.BUILDING, status_changed_date=now):
             # Already built (or being generated elsewhere).
             return False
