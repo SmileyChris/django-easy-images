@@ -1,6 +1,6 @@
 [project]
 name = "django-easy-images"
-version = "1.4"
+version = "1.4.1"
 description = "Easily build responsive HTML `<img>` tags from Django images"
 authors = [{ name = "Chris Beaven", email = "smileychris@gmail.com" }]
 dependencies = [
