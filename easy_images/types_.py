@@ -32,7 +32,6 @@ RatioChoices: TypeAlias = Literal[
     "golden",
     "golden_vertical",
 ]
-FitChoices: TypeAlias = Literal["contain", "cover"]
 
 alternative_re = re.compile(r"^(\d+w|\d(?:\.\d)?x)$")
 
@@ -42,7 +41,7 @@ BuildChoices: TypeAlias = Literal["srcset", "src", None]
 class Options(TypedDict, total=False):
     quality: int
     crop: tuple[float, float] | CropChoices | bool
-    cover: bool
+    contain: bool
     window: tuple[float, float, float, float] | None
     width: int | WidthChoices | None
     ratio: float | tuple[float, float] | RatioChoices | None

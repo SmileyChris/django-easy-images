@@ -23,7 +23,7 @@ option_defaults: ImgOptions = {
     "quality": 80,
     "ratio": "video",
     "crop": True,
-    "cover": False,
+    "contain": True,
     "densities": [2],
     "format": "webp",
 }

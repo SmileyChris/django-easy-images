@@ -182,13 +182,11 @@ You can also use the following keywords: `tl` (top left), `tr` (top right), `bl`
 If crop is `False`, the image will be resized so that it will cover the requested ratio but not cropped down.
 This is useful when you want to handle positioning in CSS using `object-fit`.
 
-#### `cover`
+#### `contain`
 
-Whether to resize the image to cover the requested ratio or to contain it (when not cropping).
+When resizing the image (and not cropping), contain the image within the requested ratio. This ensures it will always fit within the requested dimensions. It also stops the image from being upscaled.
 
-The default is `True`, meaning the image will be resized down to cover the requested ratio (which means the image dimensions may be larger than the requested dimensions).
-
-To rezise the image to always fit within the requested dimensions, set `cover=False`.
+The default is `False`, meaning the image will be resized down to cover the requested ratio (which means the image dimensions may be larger than the requested dimensions).
 
 #### `focal_window`
 

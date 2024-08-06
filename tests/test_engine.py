@@ -57,7 +57,14 @@ def test_scale():
     source = Image.black(1000, 1000)
     scaled_cover = scale_image(source, (400, 500))
     assert (scaled_cover.width, scaled_cover.height) == (500, 500)
-    scaled = scale_image(source, (400, 500), cover=False)
+    scaled = scale_image(source, (400, 500), contain=True)
     assert (scaled.width, scaled.height) == (400, 400)
     cropped = scale_image(source, (400, 500), crop=True)
     assert (cropped.width, cropped.height) == (400, 500)
+
+    small_src = Image.black(100, 100)
+    cropped_upscale = scale_image(small_src, (400, 500), crop=True)
+    assert (cropped_upscale.width, cropped_upscale.height) == (400, 500)
+
+    scaled_not_upscale = scale_image(small_src, (400, 500), contain=True)
+    assert (scaled_not_upscale.width, scaled_not_upscale.height) == (100, 100)

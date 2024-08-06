@@ -58,6 +58,6 @@ def test_str():
         == '{"crop": null, "mimetype": null, "quality": 80, "ratio": 1.7777777777777777, "width": 100, "window": null}'
     )
     assert (
-        str(ParsedOptions(width=100, cover=False))
-        == '{"cover": false, "crop": null, "mimetype": null, "quality": 80, "ratio": null, "width": 100, "window": null}'
+        str(ParsedOptions(width=100, contain=True))
+        == '{"contain": true, "crop": null, "mimetype": null, "quality": 80, "ratio": null, "width": 100, "window": null}'
     )

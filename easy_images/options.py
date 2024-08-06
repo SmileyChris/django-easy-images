@@ -39,17 +39,17 @@ ratio_options: dict[str, float] = {
 
 
 class ParsedOptions:
-    __slots__ = ("quality", "crop", "cover", "window", "width", "ratio", "mimetype")
+    __slots__ = ("quality", "crop", "contain", "window", "width", "ratio", "mimetype")
 
     quality: int
     crop: tuple[float, float] | None
-    cover: bool
+    contain: bool
     window: tuple[float, float, float, float] | None
     width: int | None
     ratio: float | None
     mimetype: str | None
 
-    _defaults = {"cover": True}
+    _defaults = {"contain": False}
 
     def __init__(self, bound=None, string="", /, **options):
         if string:
@@ -112,9 +112,9 @@ class ParsedOptions:
         raise ValueError(f"Invalid crop value {value}")
 
     @staticmethod
-    def parse_cover(value, **options) -> bool:
+    def parse_contain(value, **options) -> bool:
         if not isinstance(value, bool):
-            raise ValueError(f"Invalid cover value {value}")
+            raise ValueError(f"Invalid contain value {value}")
         return value
 
     @staticmethod

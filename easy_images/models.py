@@ -139,7 +139,7 @@ class EasyImage(models.Model):
                     size,
                     focal_window=options.window,
                     crop=options.crop,
-                    cover=options.cover,
+                    contain=options.contain,
                 )
             else:
                 img = source_img
