@@ -1,36 +1,45 @@
-import uuid  # Needed for dispatch_uid
+import uuid
+from typing import Iterator
 from unittest.mock import MagicMock
 
 import pytest
+from _pytest.fixtures import FixtureRequest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import pyvips
 from easy_images import Img
 from easy_images.models import EasyImage
 from easy_images.signals import (
-    file_post_save,  # Added for fixture teardown
+    file_post_save,
     queued_img,
+)
+from easy_images.types_ import (
+    BuildChoices,
+    ImgOptions,
 )
 from tests.easy_images_tests.models import Profile
 
 
 @pytest.fixture
-def profile_queue_img(request):
+def profile_queue_img(request: FixtureRequest) -> Iterator[Img]:
     """
     Fixture to set up and tear down the Img.queue signal connection for Profile model.
     Handles different build options via indirect parametrization if needed,
     or can be used directly for default setup.
     """
-    build_option = getattr(request, "param", None)  # Get build option if parametrized
+    # Get build option if parametrized
+    build_option: BuildChoices | None = getattr(request, "param", None)
 
     # Define standard Img options used across tests
     # test_queue and test_queued_img_signal use densities=[]
     # test_queue_with_build_src uses densities=[]
     # test_queue_with_build_srcset uses default densities
-    img_options = {"width": 100}
+    img_options: ImgOptions = {"width": 100}
     if build_option is None or build_option == "src":
+        # Ensure the key exists before assigning, although ImgOptions allows partials
         img_options["densities"] = []
 
+    # Unpack the TypedDict directly
     img = Img(**img_options)
 
     # Generate a unique ID for this specific handler connection
@@ -44,12 +53,11 @@ def profile_queue_img(request):
 
     # Teardown: Disconnect the specific handler using its unique ID
     disconnected = file_post_save.disconnect(dispatch_uid=handler_uid, sender=Profile)
-    # Optional: Add an assertion or warning if disconnect fails, though it shouldn't with a UID
-    # assert disconnected, f"Failed to disconnect signal handler with UID {handler_uid}"
+    assert disconnected, f"Failed to disconnect signal handler with UID {handler_uid}"
 
 
 @pytest.mark.django_db
-def test_queue(profile_queue_img):  # Use fixture
+def test_queue(profile_queue_img):
     """Test that the queue mechanism triggers the signal without building."""
     # img and queue setup is handled by the fixture
 
@@ -66,10 +74,9 @@ def test_queue(profile_queue_img):  # Use fixture
     assert EasyImage.objects.count() == 0
 
 
-# Parametrize the fixture for this test
 @pytest.mark.parametrize("profile_queue_img", ["src"], indirect=True)
 @pytest.mark.django_db
-def test_queue_with_build_src(profile_queue_img):  # Use fixture
+def test_queue_with_build_src(profile_queue_img):
     """Test queuing with immediate build of source (base) image."""
     # img and queue setup is handled by the fixture
     content = pyvips.Image.black(200, 200).write_to_buffer(".jpg")
@@ -82,10 +89,9 @@ def test_queue_with_build_src(profile_queue_img):  # Use fixture
     assert EasyImage.objects.filter(image="").count() == 0  # Base image should be built
 
 
-# Parametrize the fixture for this test
 @pytest.mark.parametrize("profile_queue_img", ["srcset"], indirect=True)
 @pytest.mark.django_db
-def test_queue_with_build_srcset(profile_queue_img):  # Use fixture
+def test_queue_with_build_srcset(profile_queue_img):
     """Test queuing with immediate build of srcset images only."""
     # img (with default densities) and queue setup is handled by the fixture
     content = pyvips.Image.black(200, 200).write_to_buffer(".jpg")
@@ -113,13 +119,13 @@ def test_queue_with_build_srcset(profile_queue_img):  # Use fixture
     # Assert only the base image among the new ones is unbuilt
     unbuilt_new_images = EasyImage.objects.filter(pk__in=new_pks, image="")
     assert unbuilt_new_images.count() == 1, "Expected 1 unbuilt new image"
-    assert unbuilt_new_images.first().pk == base_pk, (
-        "The unbuilt image was not the base image"
-    )
+    unbuilt_first = unbuilt_new_images.first()
+    assert unbuilt_first is not None, "QuerySet returned None unexpectedly"
+    assert unbuilt_first.pk == base_pk, "The unbuilt image was not the base image"
 
 
 @pytest.mark.django_db
-def test_queued_img_signal(profile_queue_img):  # Use fixture
+def test_queued_img_signal(profile_queue_img):
     """Test the queued_img signal is dispatched correctly when needed."""
     # img and queue setup is handled by the fixture
 
