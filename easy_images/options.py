@@ -17,7 +17,7 @@ crop_options: dict[str, tuple[float, float]] = {
     "r": (1, 0.5),
 }
 
-width_options = {
+width_options: dict[str, int] = {
     "xs": 320,
     "sm": 384,
     "md": 448,
@@ -98,9 +98,11 @@ class ParsedOptions:
         if value is True:
             return (0.5, 0.5)
         try:
+            # Check if value is a key in crop_options (requires hashable value)
             if value in crop_options:
                 return crop_options[value]
         except TypeError:
+            # value is not hashable (e.g., a list), proceed to other checks
             pass
         if isinstance(value, str):
             value = value.split(",")
@@ -113,12 +115,21 @@ class ParsedOptions:
 
     @staticmethod
     def parse_contain(value, **options) -> bool:
-        if not isinstance(value, bool):
-            raise ValueError(f"Invalid contain value {value}")
-        return value
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            val = value.lower()
+            if val in ("true", "1", "yes"):
+                return True
+            if val in ("false", "0", "no"):
+                return False
+        # Allow integer 1 or 0
+        if isinstance(value, int) and value in (0, 1):
+            return bool(value)
+        raise ValueError(f"Invalid contain value {value}")
 
     @staticmethod
-    def parse_window(value, **options) -> tuple[float, float, float, float]:
+    def parse_window(value, **options) -> tuple[float, float, float, float] | None:
         if isinstance(value, str):
             value = value.split(",")
         if isinstance(value, (tuple, list)) and len(value) == 4:
@@ -131,24 +142,42 @@ class ParsedOptions:
         raise ValueError(f"Invalid window value {value}")
 
     @staticmethod
-    def parse_width(value, **options) -> int:
-        if value in width_options:
-            value = width_options[value]
+    def parse_width(value, **options) -> int | None:
+        if value is None:
+            return None
+        try:
+            # Check if value is a key in width_options (requires hashable value)
+            if value in width_options:
+                value = width_options[value]
+        except TypeError:
+            # value is not hashable (e.g., a list), proceed to other checks
+            pass
         try:
             value = int(value)
         except (ValueError, TypeError):
             raise ValueError(f"Invalid width value {value}")
-        if multiplier := options.get("width_multiplier"):
+        # Ensure value is an integer before applying multiplier
+        current_width = value
+
+        if multiplier_val := options.get("width_multiplier"):
             try:
-                value = int(value * multiplier)
+                multiplier = float(multiplier_val)
+                current_width = int(current_width * multiplier)
             except (ValueError, TypeError):
-                raise ValueError(f"Invalid width multiplier value {multiplier}")
-        return value
+                raise ValueError(f"Invalid width multiplier value {multiplier_val}")
+        return current_width
 
     @staticmethod
-    def parse_ratio(value, **options) -> float:
-        if value in ratio_options:
-            return ratio_options[value]
+    def parse_ratio(value, **options) -> float | None:
+        if value is None:
+            return None
+        try:
+            # Check if value is a key in ratio_options (requires hashable value)
+            if value in ratio_options:
+                return ratio_options[value]
+        except TypeError:
+            # value is not hashable (e.g., a list), proceed to other checks
+            pass
         if isinstance(value, str):
             value = value.split("/")
         if isinstance(value, (tuple, list)) and len(value) == 2:
@@ -156,15 +185,23 @@ class ParsedOptions:
                 return float(value[0]) / float(value[1])
             except (ValueError, TypeError):
                 pass
+        # At this point, value could be a single number (int/float)
+        # or a string representation of a number, or potentially
+        # a list/tuple that wasn't handled above (which is invalid).
         try:
-            if isinstance(value, list):
-                value = value[0]
-            return float(value)
+            # Attempt direct conversion if it's not a list/tuple already handled
+            if not isinstance(value, (list, tuple)):
+                return float(value)
         except (ValueError, TypeError):
-            raise ValueError(f"Invalid ratio value {value}")
+            # If conversion fails, fall through to the exception
+            pass
+        # If we reach here, the value was invalid
+        raise ValueError(f"Invalid ratio value {value}")
 
     @staticmethod
-    def parse_mimetype(value, **options) -> str:
+    def parse_mimetype(value, **options) -> str | None:
+        if value is None:
+            return None
         return str(value)
 
     def __str__(self):
