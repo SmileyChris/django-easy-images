@@ -39,7 +39,15 @@ ratio_options: dict[str, float] = {
 
 
 class ParsedOptions:
-    __slots__ = ("quality", "crop", "contain", "window", "width", "ratio", "mimetype")
+    __slots__ = (
+        "quality",
+        "crop",
+        "contain",
+        "window",
+        "width",
+        "ratio",
+        "mimetype",
+    )
 
     quality: int
     crop: tuple[float, float] | None
@@ -61,18 +69,29 @@ class ParsedOptions:
         if bound:
             for key, value in bound.__dict__.items():
                 context[key] = value
+        # Process known slots first
+        processed_keys = set()
         for key in self.__slots__:
+            processed_keys.add(key)
             if key in options and options[key] is not None:
                 value = options[key]
                 if isinstance(value, Variable):
+                    # Resolve Django template variables if present
                     value = value.resolve(context)
                 parse_func = getattr(self, f"parse_{key}")
+                # Pass all options in case parse funcs need context (like width_multiplier)
                 value = parse_func(value, **options)
             elif key in self._defaults:
                 value = self._defaults[key]
             else:
+                # Set default quality, others default to None implicitly via type hints
                 value = 80 if key == "quality" else None
             setattr(self, key, value)
+
+        # ParsedOptions only processes keys in its __slots__.
+        # It does not validate or care about other keys passed in **options.
+        # Validation of allowed keys for a specific context (like a template tag)
+        # should happen in the calling code.
 
     @classmethod
     def from_str(cls, s: str):

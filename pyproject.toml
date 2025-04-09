@@ -49,3 +49,7 @@ distribution = true
 DJANGO_SETTINGS_MODULE = "tests.settings"
 django_find_project = false
 pythonpath = "."
+addopts = "--cov=easy_images --cov-report=term-missing"
+
+[dependency-groups]
+dev = ["pytest-cov>=5.0.0", "pytest-django>=4.11.0"]
