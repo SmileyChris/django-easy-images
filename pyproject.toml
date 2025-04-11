@@ -47,6 +47,8 @@ distribution = true
 
 [tool.pdm.version]
 source = "scm"
+fallback_version = "0.0.0"
+
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
