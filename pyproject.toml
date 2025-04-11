@@ -32,6 +32,7 @@ classifiers = [
 
 [project.urls]
 Repository = "https://github.com/SmileyChris/django-easy-images"
+Docs = "https://smileychris.github.io/django-easy-images/"
 
 [project.license]
 text = "MIT"

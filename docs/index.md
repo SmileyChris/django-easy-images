@@ -32,4 +32,4 @@ html = profile_thumb(user.profile.photo, alt="User profile").as_html()
 
 ## Need Help?
 
-Found an issue or have questions? Please [open an issue](https://github.com/your-repo/issues) on GitHub.
+Found an issue or have questions? Please [open an issue](https://github.com/SmileyChris/django-easy-images) on GitHub.
