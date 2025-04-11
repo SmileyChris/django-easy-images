@@ -1,0 +1,14 @@
+site_name: Django Easy Images
+
+nav:
+  - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  - Advanced Usage: advanced-usage.md
+  - API Reference: api.md
+
+theme:
+  name: mkdocs
+
+markdown_extensions:
+  - admonition
+  - codehilite

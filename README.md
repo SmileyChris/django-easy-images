@@ -1,3 +1,4 @@
+
 # Django easy images
 
 Easily build responsive HTML `<img>` tags by thumbnailing Django images using the VIPS fast image processing library.
@@ -38,7 +39,23 @@ INSTALLED_APPS = [
     # ...
 ]
 ```
+Since this uses pyvips, you'll need to have the [libvips library installed on your system](https://www.libvips.org/install.html).
 
+## Documentation
+
+Project documentation is built using [mkdocs](https://www.mkdocs.org/). To build and serve the documentation locally:
+
+```bash
+pip install mkdocs
+mkdocs serve
+```
+
+Then open http://localhost:8000 in your browser.
+
+The documentation includes:
+- Usage examples
+- API reference
+- Configuration options
 Since this uses pyvips, you'll need to have the [libvips library installed on your system](https://www.libvips.org/install.html).
 
 <table>
