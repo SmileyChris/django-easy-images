@@ -1,6 +1,6 @@
 [project]
 name = "django-easy-images"
-version = "3.0"
+dynamic = ["version"]
 description = "Easily build responsive HTML `<img>` tags from Django images"
 authors = [{ name = "Chris Beaven", email = "smileychris@gmail.com" }]
 dependencies = [
@@ -47,6 +47,9 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.version]
+source = "scm"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
