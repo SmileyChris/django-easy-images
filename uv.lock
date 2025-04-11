@@ -487,7 +487,6 @@ wheels = [
 
 [[package]]
 name = "django-easy-images"
-version = "3.0"
 source = { editable = "." }
 dependencies = [
     { name = "django", version = "4.2.20", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -510,6 +509,7 @@ tests = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mkdocs" },
     { name = "pytest-cov", version = "5.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pytest-cov", version = "6.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "pytest-django" },
@@ -532,6 +532,7 @@ provides-extras = ["tests"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
     { name = "pytest-django", specifier = ">=4.11.0" },
 ]
