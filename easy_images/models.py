@@ -60,61 +60,6 @@ class EasyImageManager(models.Manager["EasyImage"]):
         name, storage = image_name_and_storage(file)
         return self.filter(name=name, storage=storage)
 
-    def from_pks(
-        self,
-        pk_to_options_map: dict[UUID, ParsedOptions],
-        name: str,
-        storage_name: str,
-    ) -> dict[UUID, EasyImage]:
-        """
-        Fetch existing EasyImage objects for the given PKs and bulk-create any missing ones.
-
-        :param pk_to_options_map: A dictionary mapping the calculated UUID primary key
-                                  to the ParsedOptions for that image version.
-        :param name: The name of the source file.
-        :param storage_name: The name of the storage used for the source file.
-        :return: A dictionary mapping UUID primary keys to the fetched or created
-                 EasyImage instances.
-        """
-        if not pk_to_options_map:
-            return {}
-
-        pks = list(pk_to_options_map.keys())
-        existing_images = {img.pk: img for img in self.filter(pk__in=pks)}
-
-        missing_pks = set(pks) - set(existing_images.keys())
-        new_instances_to_create: list[EasyImage] = []
-
-        if missing_pks:
-            for pk in missing_pks:
-                options = pk_to_options_map[pk]
-                new_instances_to_create.append(
-                    EasyImage(
-                        pk=pk,
-                        storage=storage_name,
-                        name=name,
-                        args=options.to_dict(),
-                        # status defaults to QUEUED
-                    )
-                )
-
-            # ignore_conflicts=True handles potential race conditions if another process
-            # created the same PK between the filter call and bulk_create.
-            # The existing record will be kept.
-            created_instances = self.bulk_create(
-                new_instances_to_create, ignore_conflicts=True
-            )
-            existing_images.update({img.pk: img for img in created_instances})
-
-            # Re-fetch potentially ignored conflicts to ensure we return all requested PKs
-            if len(existing_images) < len(pks):
-                refetched_images = {
-                    img.pk: img for img in self.filter(pk__in=missing_pks)
-                }
-                existing_images.update(refetched_images)
-
-        return existing_images
-
 
 class ImageStatus(models.IntegerChoices):
     QUEUED = 0, _("Queued")

@@ -35,7 +35,7 @@ RatioChoices: TypeAlias = Literal[
 
 alternative_re = re.compile(r"^(\d+w|\d(?:\.\d)?x)$")
 
-BuildChoices: TypeAlias = Literal["srcset", "src", None]
+BuildChoices: TypeAlias = Literal["srcset", "src", "all", None]
 
 
 class Options(TypedDict, total=False):

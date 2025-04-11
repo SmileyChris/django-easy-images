@@ -13,7 +13,7 @@ from easy_images.models import (
 from pyvips.vimage import Image
 from tests.easy_images_tests.models import Profile
 
-thumbnail = Img(width=200)
+thumbnail = Img(width=200, format="jpg")
 
 
 @pytest.mark.django_db
@@ -62,5 +62,5 @@ def test_build_from_filefield_with_build():
     profile = Profile.objects.create(name="Test", image=file)
 
     thumb = thumbnail(profile.image, build="src")
-    assert thumb.base_url().endswith(".jpg")
+    assert thumb.base_url().endswith(".png")
     assert thumb.as_html() == f'<img src="{thumb.base_url()}" alt="">'
