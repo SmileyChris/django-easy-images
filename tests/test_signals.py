@@ -137,3 +137,24 @@ def test_queued_img_signal(profile_queue_img):
     )
     # .queue is triggered, which triggers the queued_img signal
     assert handler.called
+
+
+@pytest.mark.django_db
+def test_imagefield_signal_trigger(profile_queue_img):
+    """Test that saving a model with an ImageField triggers the queue signal."""
+    # img and queue setup is handled by the fixture
+
+    handler = MagicMock()
+    queued_img.connect(handler)
+
+    # Use a minimal valid image content
+    content = pyvips.Image.black(10, 10).write_to_buffer(".jpg")
+    Profile.objects.create(
+        name="ImageField Test",
+        image=SimpleUploadedFile(name="test_img.jpg", content=content),
+    )
+
+    # Assert the signal was called, indicating queuing happened for ImageField
+    assert handler.called
+    # Assert no objects were actually created in DB yet due to lazy loading (default behavior)
+    assert EasyImage.objects.count() == 0
