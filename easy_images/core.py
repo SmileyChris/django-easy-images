@@ -75,7 +75,7 @@ class Img:
         # Delegate to the batch's add method
         return self._batch.add(
             source_file=source,
-            options_dict=self.options,
+            img=self,
             alt=alt,
             build=build,
             send_signal=send_signal,
@@ -154,7 +154,7 @@ class ImageBatch:
     def add(
         self,
         source_file: FieldFile,
-        options_dict: ImgOptions,
+        img: Img,
         alt: str | None,
         build: BuildChoices | None,
         send_signal: bool,
@@ -183,8 +183,8 @@ class ImageBatch:
         instance = source_file.instance
 
         base_width: int | None = None
-        if "width" in options_dict and options_dict["width"] is not None:
-            raw_base_opts = cast(Options, options_dict.copy())
+        if "width" in img.options and img.options["width"] is not None:
+            raw_base_opts = cast(Options, img.options.copy())
             raw_base_opts["mimetype"] = "image/jpeg"
             base_parsed_options = ParsedOptions(instance, **raw_base_opts)
             request_base_pk = EasyImage.objects.hash(
@@ -193,10 +193,10 @@ class ImageBatch:
             request_pk_to_options[request_base_pk] = base_parsed_options
             base_width = base_parsed_options.width
 
-        densities = list(options_dict.get("densities") or [])
-        srcset_base_options = cast(Options, options_dict.copy())
+        densities = list(img.options.get("densities") or [])
+        srcset_base_options = cast(Options, img.options.copy())
 
-        if fmt := options_dict.get("format"):
+        if fmt := img.options.get("format"):
             mime = format_map.get(fmt)
             if mime:
                 srcset_base_options["mimetype"] = mime
@@ -209,7 +209,7 @@ class ImageBatch:
             source_type = mimetypes.guess_type(source_file.name)[0]
             srcset_base_options["mimetype"] = source_type or "image/jpeg"
 
-        sizes = options_dict.get("sizes")
+        sizes = img.options.get("sizes")
         max_width_options: Options | None = None
         max_width_for_density = base_width
 
@@ -315,7 +315,7 @@ class ImageBatch:
         self._requests[request_id] = {
             "source_name": source_file.name,
             "storage_name": storage_name,
-            "alt": alt if isinstance(alt, str) else options_dict.get("alt", ""),
+            "alt": alt if isinstance(alt, str) else img.options.get("alt", ""),
             "build": build,  # Store build choice for later use
             "send_signal": send_signal,
             "pk_to_options": request_pk_to_options,
@@ -585,7 +585,6 @@ class BoundImg:
 
     # Add more specific type hints using TypeVar or overload if needed,
     # but for now, basic Any helps Pylance a bit.
-    # from typing import Any # Import moved to top
     def _get_request_detail(self, key: str, default: Any = None) -> Any:
         """Helper to get details for this specific request from the batch."""
         request_data = self._parent_batch._requests.get(self._request_id, {})
