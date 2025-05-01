@@ -155,9 +155,9 @@ class ImageBatch:
         self,
         source_file: FieldFile,
         img: Img,
-        alt: str | None,
-        build: BuildChoices | None,
-        send_signal: bool,
+        alt: str | None = None,
+        build: BuildChoices = None,
+        send_signal=False,
     ) -> "BoundImg":
         """
         Adds an image request to the batch.
