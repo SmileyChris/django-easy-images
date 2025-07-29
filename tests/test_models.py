@@ -61,6 +61,15 @@ def test_build_from_filefield_with_build():
     file = SimpleUploadedFile("test.png", image.write_to_buffer(".png[Q=90]"))
     profile = Profile.objects.create(name="Test", image=file)
 
-    thumb = thumbnail(profile.image, build="src")
-    assert thumb.base_url().endswith(".png")
-    assert thumb.as_html() == f'<img src="{thumb.base_url()}" alt="">'
+    # Test the hybrid approach - auto-building on property access
+    fresh_thumbnail = Img(width=200, format="jpg")
+    thumb = fresh_thumbnail(profile.image, build="src")
+    
+    # With hybrid approach, no need to call batch.build() - auto-builds on access
+    assert thumb.base_url().endswith(".jpg")
+    # After building, HTML should include width and height attributes
+    html = thumb.as_html()
+    assert f'src="{thumb.base_url()}"' in html
+    assert 'alt=""' in html
+    assert 'width="200"' in html  # Should match the configured width
+    assert 'height=' in html      # Height will be calculated based on aspect ratio

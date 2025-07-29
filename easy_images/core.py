@@ -38,7 +38,7 @@ option_defaults: ImgOptions = {
 class Img:
     """Configuration object for generating images."""
 
-    _batch: "ImageBatch"
+    _batch: "ImageBatch | None"
 
     def __init__(
         self, batch: "ImageBatch | None" = None, **options: Unpack[ImgOptions]
@@ -46,7 +46,7 @@ class Img:
         all_options = option_defaults.copy()
         all_options.update(options)
         self.options = all_options
-        self._batch = batch or ImageBatch()  # Store/create batch
+        self._batch = batch  # Store batch reference, None by default
 
     def extend(self, **options: Unpack[ImgOptions]) -> Img:
         """Create a new Img instance with updated options."""
@@ -70,15 +70,18 @@ class Img:
         alt: str | None = None,
         build: BuildChoices = None,
         send_signal=True,
+        immediate: bool = False,
     ) -> "BoundImg":  # Return new BoundImg
         """Add this image configuration to the batch for processing."""
-        # Delegate to the batch's add method
-        return self._batch.add(
+        # Create a fresh batch if none exists (avoids memory leaks)
+        batch = self._batch or ImageBatch()
+        return batch.add(
             source_file=source,
             img=self,
             alt=alt,
             build=build,
             send_signal=send_signal,
+            immediate=immediate,
         )
 
     def queue(
@@ -118,7 +121,7 @@ class Img:
                 should_process = True
 
             if should_process:
-                self(fieldfile, build=build, send_signal=send_signal)
+                self(fieldfile, build=build, send_signal=send_signal, immediate=True)
 
         # Pass dispatch_uid to connect
         file_post_save.connect(
@@ -158,6 +161,7 @@ class ImageBatch:
         alt: str | None = None,
         build: BuildChoices = None,
         send_signal=False,
+        immediate: bool = False,
     ) -> "BoundImg":
         """
         Adds an image request to the batch.
@@ -329,10 +333,9 @@ class ImageBatch:
         # Merge this request's PKs into the batch-wide collection
         self._all_pk_to_options.update(request_pk_to_options)
 
-        # --- Handle Immediate Build Request ---
-        if build:
-            # We need to ensure this specific request's images are loaded/created
-            # and then trigger the build. This might force the whole batch load.
+        # Build intent is stored in request data, executed later via batch.build()
+        # However, if immediate=True (used by queue/signals), build right away
+        if build and immediate:
             self._ensure_loaded()
             self.build_images_for_request(request_id, build)
 
@@ -569,6 +572,23 @@ class ImageBatch:
                         # Instance might have been deleted concurrently, ignore.
                         pass
 
+    def build(self):
+        """
+        Execute all build requests in the batch efficiently.
+        
+        This method processes all images that were added with a build parameter,
+        performing batch database operations first, then building each image
+        according to its specified build choice.
+        """
+        # Ensure all DB records are loaded/created efficiently in one batch operation
+        self._ensure_loaded()
+        
+        # Build images for each request that specified a build option
+        for request_id, request_data in self._requests.items():
+            build_choice = request_data.get("build")
+            if build_choice:  # Only build if build was specified during add()
+                self.build_images_for_request(request_id, build_choice)
+
 
 class BoundImg:
     """
@@ -582,6 +602,7 @@ class BoundImg:
     def __init__(self, parent_batch: "ImageBatch", request_id: int):
         self._parent_batch = parent_batch
         self._request_id = request_id
+        self._is_built = False  # Track if this specific BoundImg has been built
 
     # Add more specific type hints using TypeVar or overload if needed,
     # but for now, basic Any helps Pylance a bit.
@@ -589,6 +610,18 @@ class BoundImg:
         """Helper to get details for this specific request from the batch."""
         request_data = self._parent_batch._requests.get(self._request_id, {})
         return request_data.get(key, default)
+    
+    def _ensure_batch_built(self):
+        """Ensure this BoundImg has been built if it needs building."""
+        # Always ensure DB records are loaded first
+        self._parent_batch._ensure_loaded()
+        
+        # Check if this specific request needs building and hasn't been built yet
+        if not self._is_built:
+            build_choice = self._get_request_detail("build")
+            if build_choice:  # Only auto-build if build was specified
+                self._parent_batch.build_images_for_request(self._request_id, build_choice)
+                self._is_built = True
 
     @property
     def alt(self) -> str:
@@ -597,7 +630,7 @@ class BoundImg:
 
     @property
     def base(self) -> "EasyImage | None":
-        self._parent_batch._ensure_loaded()  # Trigger load on first access
+        self._ensure_batch_built()  # Auto-build if needed
         base_pk = self._get_request_detail("base_pk")
         if base_pk:
             # Use the batch's getter which handles the cache
@@ -606,7 +639,7 @@ class BoundImg:
 
     @property
     def srcset(self) -> list[SrcSetItem]:  # Use the new SrcSetItem defined below
-        self._parent_batch._ensure_loaded()  # Trigger load on first access
+        self._ensure_batch_built()  # Auto-build if needed
         srcset_items: list[SrcSetItem] = []
         # Provide a default empty list to satisfy type checker for iteration
         srcset_pks = self._get_request_detail("srcset_pks", []) or []
