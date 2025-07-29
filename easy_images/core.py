@@ -331,7 +331,16 @@ class ImageBatch:
         }
 
         # Merge this request's PKs into the batch-wide collection
+        # Check if we're adding new PKs that weren't in the batch before
+        new_pks = set(request_pk_to_options.keys()) - set(
+            self._all_pk_to_options.keys()
+        )
         self._all_pk_to_options.update(request_pk_to_options)
+
+        # If we added new PKs to an already-loaded batch, reset _is_loaded
+        # so _ensure_loaded() will process the new images
+        if new_pks and self._is_loaded:
+            self._is_loaded = False
 
         # Build intent is stored in request data, executed later via batch.build()
         # However, if immediate=True (used by queue/signals), build right away
@@ -367,9 +376,20 @@ class ImageBatch:
             self._is_loaded = True
             return
 
-        existing_images = {
-            img.pk: img for img in EasyImage.objects.filter(pk__in=all_pks)
-        }
+        # Only query for PKs we don't already have loaded
+        already_loaded_pks = set(self._loaded_images.keys())
+        pks_to_query = [pk for pk in all_pks if pk not in already_loaded_pks]
+
+        if pks_to_query:
+            new_images = {
+                img.pk: img for img in EasyImage.objects.filter(pk__in=pks_to_query)
+            }
+            # Merge new images with existing ones
+            existing_images = {**self._loaded_images, **new_images}
+        else:
+            # No new PKs to query, use existing loaded images
+            existing_images = self._loaded_images.copy()
+
         missing_pks = set(all_pks) - set(existing_images.keys())
 
         new_instances_to_create: list[EasyImage] = []
@@ -575,14 +595,14 @@ class ImageBatch:
     def build(self):
         """
         Execute all build requests in the batch efficiently.
-        
+
         This method processes all images that were added with a build parameter,
         performing batch database operations first, then building each image
         according to its specified build choice.
         """
         # Ensure all DB records are loaded/created efficiently in one batch operation
         self._ensure_loaded()
-        
+
         # Build images for each request that specified a build option
         for request_id, request_data in self._requests.items():
             build_choice = request_data.get("build")
@@ -602,7 +622,6 @@ class BoundImg:
     def __init__(self, parent_batch: "ImageBatch", request_id: int):
         self._parent_batch = parent_batch
         self._request_id = request_id
-        self._is_built = False  # Track if this specific BoundImg has been built
 
     # Add more specific type hints using TypeVar or overload if needed,
     # but for now, basic Any helps Pylance a bit.
@@ -610,18 +629,64 @@ class BoundImg:
         """Helper to get details for this specific request from the batch."""
         request_data = self._parent_batch._requests.get(self._request_id, {})
         return request_data.get(key, default)
-    
+
     def _ensure_batch_built(self):
         """Ensure this BoundImg has been built if it needs building."""
         # Always ensure DB records are loaded first
         self._parent_batch._ensure_loaded()
-        
-        # Check if this specific request needs building and hasn't been built yet
-        if not self._is_built:
-            build_choice = self._get_request_detail("build")
-            if build_choice:  # Only auto-build if build was specified
-                self._parent_batch.build_images_for_request(self._request_id, build_choice)
-                self._is_built = True
+
+        build_choice = self._get_request_detail("build")
+        if build_choice and not self.is_built:
+            self._parent_batch.build_images_for_request(self._request_id, build_choice)
+
+    @property
+    def is_built(self) -> bool:
+        """Check if the requested images have been built.
+
+        Returns True if the images specified by the build parameter have been
+        successfully built and stored in the database.
+        """
+        # Access underlying data without triggering auto-building to avoid recursion
+        self._parent_batch._ensure_loaded()  # Just ensure DB records exist
+
+        build_choice = self._get_request_detail("build")
+        if not build_choice:
+            return True  # No build requested, consider it "built"
+
+        if build_choice == "src":
+            base_pk = self._get_request_detail("base_pk")
+            if base_pk:
+                base_img = self._parent_batch.get_image(base_pk)
+                # Simply check if the image field is populated (not None/empty)
+                # This avoids file I/O and is sufficient for our needs
+                return bool(base_img and base_img.image)
+        elif build_choice == "srcset":
+            srcset_pks = self._get_request_detail("srcset_pks", []) or []
+            # Just check if any srcset images have been built
+            for pk in srcset_pks:
+                thumb = self._parent_batch.get_image(pk)
+                if thumb and thumb.image:
+                    return True  # At least one is built
+            return False
+        elif build_choice == "all":
+            # Check if we have PKs to check
+            base_pk = self._get_request_detail("base_pk")
+            srcset_pks = self._get_request_detail("srcset_pks", []) or []
+
+            # Check base if exists
+            if base_pk:
+                base_img = self._parent_batch.get_image(base_pk)
+                if base_img and base_img.image:
+                    return True
+
+            # Check srcset if exists
+            for pk in srcset_pks:
+                thumb = self._parent_batch.get_image(pk)
+                if thumb and thumb.image:
+                    return True
+
+            return False
+        return False
 
     @property
     def alt(self) -> str:
