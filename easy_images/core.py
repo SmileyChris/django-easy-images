@@ -140,16 +140,16 @@ class SrcSetItem(NamedTuple):
 
 class ImageBatch:
     """
-    Manages a collection of image requests for batched loading.
+    Manages a collection of image items for batched loading.
     """
 
     def __init__(self):
         self._is_loaded: bool = False
         self._all_pk_to_options: dict[UUID, ParsedOptions] = {}
         self._loaded_images: dict[UUID, "EasyImage"] = {}
-        # Maps request_id -> {details: dict}
-        self._requests: dict[int, dict] = {}
-        self._next_request_id: int = 0
+        # Maps item_id -> {details: dict}
+        self._batch_items: dict[int, dict] = {}
+        self._next_item_id: int = 0
         # Store source file info needed for loading missing images
         # Maps (name, storage_name) -> FieldFile (or just necessary info)
         self._source_files: dict[tuple[str, str], FieldFile] = {}
@@ -164,13 +164,13 @@ class ImageBatch:
         immediate: bool = False,
     ) -> "BoundImg":
         """
-        Adds an image request to the batch.
+        Adds an image item to the batch.
         """
         # Local import inside method to avoid circular dependency issues at import time
         from .models import EasyImage, get_storage_name
 
-        request_id = self._next_request_id
-        self._next_request_id += 1
+        item_id = self._next_item_id
+        self._next_item_id += 1
 
         storage_name = get_storage_name(source_file.storage)
         source_key = (source_file.name, storage_name)
@@ -179,11 +179,11 @@ class ImageBatch:
 
         # --- Calculate PKs and Options ---
         # This logic needs to be extracted and potentially refactored for clarity
-        request_pk_to_options: dict[UUID, ParsedOptions] = {}
-        request_base_pk: UUID | None = None
-        request_srcset_pks: list[UUID] = []
-        request_srcset_pk_options: dict[UUID, Options] = {}
-        request_sizes_attr_list: list[str] = []
+        item_pk_to_options: dict[UUID, ParsedOptions] = {}
+        item_base_pk: UUID | None = None
+        item_srcset_pks: list[UUID] = []
+        item_srcset_pk_options: dict[UUID, Options] = {}
+        item_sizes_attr_list: list[str] = []
         instance = source_file.instance
 
         base_width: int | None = None
@@ -191,10 +191,10 @@ class ImageBatch:
             raw_base_opts = cast(Options, img.options.copy())
             raw_base_opts["mimetype"] = "image/jpeg"
             base_parsed_options = ParsedOptions(instance, **raw_base_opts)
-            request_base_pk = EasyImage.objects.hash(
+            item_base_pk = EasyImage.objects.hash(
                 name=source_file.name, storage=storage_name, options=base_parsed_options
             )
-            request_pk_to_options[request_base_pk] = base_parsed_options
+            item_pk_to_options[item_base_pk] = base_parsed_options
             base_width = base_parsed_options.width
 
         densities = list(img.options.get("densities") or [])
@@ -255,9 +255,9 @@ class ImageBatch:
                     storage=storage_name,
                     options=parsed_media_options,
                 )
-                request_pk_to_options[media_pk] = parsed_media_options
-                request_srcset_pks.append(media_pk)
-                request_srcset_pk_options[media_pk] = media_options
+                item_pk_to_options[media_pk] = parsed_media_options
+                item_srcset_pks.append(media_pk)
+                item_srcset_pk_options[media_pk] = media_options
 
                 media_str = (
                     f"(max-width: {media}px)" if isinstance(media, int) else str(media)
@@ -268,21 +268,21 @@ class ImageBatch:
                 ):
                     max_width_options = media_options
                     max_width_for_density = parsed_media_options.width
-                request_sizes_attr_list.append(
+                item_sizes_attr_list.append(
                     f"{media_str} {parsed_media_options.width}px"
                 )
 
-            request_sizes_attr_list.append(f"{max_width_for_density}px")
+            item_sizes_attr_list.append(f"{max_width_for_density}px")
 
             if max_width_options:
                 parsed_max_opts = ParsedOptions(instance, **max_width_options)
                 max_pk = EasyImage.objects.hash(
                     name=source_file.name, storage=storage_name, options=parsed_max_opts
                 )
-                if max_pk not in request_pk_to_options:
-                    request_pk_to_options[max_pk] = parsed_max_opts
-                    request_srcset_pks.append(max_pk)
-                    request_srcset_pk_options[max_pk] = max_width_options
+                if max_pk not in item_pk_to_options:
+                    item_pk_to_options[max_pk] = parsed_max_opts
+                    item_srcset_pks.append(max_pk)
+                    item_srcset_pk_options[max_pk] = max_width_options
 
             max_density = max(densities) if densities else 1
             if max_density > 1 and max_width_options is not None:
@@ -294,9 +294,9 @@ class ImageBatch:
                     storage=storage_name,
                     options=parsed_high_density,
                 )
-                request_pk_to_options[high_density_pk] = parsed_high_density
-                request_srcset_pks.append(high_density_pk)
-                request_srcset_pk_options[high_density_pk] = high_density_options
+                item_pk_to_options[high_density_pk] = parsed_high_density
+                item_srcset_pks.append(high_density_pk)
+                item_srcset_pk_options[high_density_pk] = high_density_options
 
         elif densities:
             for density in densities:
@@ -308,63 +308,63 @@ class ImageBatch:
                     storage=storage_name,
                     options=parsed_density_opts,
                 )
-                request_pk_to_options[density_pk] = parsed_density_opts
-                request_srcset_pks.append(density_pk)
-                request_srcset_pk_options[density_pk] = density_options
+                item_pk_to_options[density_pk] = parsed_density_opts
+                item_srcset_pks.append(density_pk)
+                item_srcset_pk_options[density_pk] = density_options
 
-        request_sizes_attr = ", ".join(request_sizes_attr_list)
+        item_sizes_attr = ", ".join(item_sizes_attr_list)
         # --- End PK/Option Calculation ---
 
-        # Store request details
-        self._requests[request_id] = {
+        # Store item details
+        self._batch_items[item_id] = {
             "source_name": source_file.name,
             "storage_name": storage_name,
             "alt": alt if isinstance(alt, str) else img.options.get("alt", ""),
             "build": build,  # Store build choice for later use
             "send_signal": send_signal,
-            "pk_to_options": request_pk_to_options,
-            "base_pk": request_base_pk,
-            "srcset_pks": request_srcset_pks,
-            "srcset_pk_options": request_srcset_pk_options,
-            "sizes_attr": request_sizes_attr,
+            "pk_to_options": item_pk_to_options,
+            "base_pk": item_base_pk,
+            "srcset_pks": item_srcset_pks,
+            "srcset_pk_options": item_srcset_pk_options,
+            "sizes_attr": item_sizes_attr,
             "source_name_fallback": source_file.name,  # Store original name for fallback
         }
 
-        # Merge this request's PKs into the batch-wide collection
+        # Merge this item's PKs into the batch-wide collection
         # Check if we're adding new PKs that weren't in the batch before
-        new_pks = set(request_pk_to_options.keys()) - set(
+        new_pks = set(item_pk_to_options.keys()) - set(
             self._all_pk_to_options.keys()
         )
-        self._all_pk_to_options.update(request_pk_to_options)
+        self._all_pk_to_options.update(item_pk_to_options)
 
         # If we added new PKs to an already-loaded batch, reset _is_loaded
         # so _ensure_loaded() will process the new images
         if new_pks and self._is_loaded:
             self._is_loaded = False
 
-        # Build intent is stored in request data, executed later via batch.build()
+        # Build intent is stored in item data, executed later via batch.build()
         # However, if immediate=True (used by queue/signals), build right away
         if build and immediate:
             self._ensure_loaded()
-            self.build_images_for_request(request_id, build)
+            self.build_images_for_item(item_id, build)
 
         # --- Handle Signal ---
-        # Check if any of the calculated PKs for *this specific request* already exist.
+        # Check if any of the calculated PKs for *this specific item* already exist.
         # If none exist and send_signal is True, it means this is the first time
         # we're encountering this image configuration, so send the signal.
-        bound_img = BoundImg(self, request_id)  # Create instance first
+        bound_img = BoundImg(self, item_id)  # Create instance first
         if send_signal:
-            request_pks = list(request_pk_to_options.keys())
-            if request_pks:  # Only check DB if there are PKs to check
+            item_pks = list(item_pk_to_options.keys())
+            if item_pks:  # Only check DB if there are PKs to check
                 # Check if *any* of these PKs exist. If the count is 0, none exist.
-                if not EasyImage.objects.filter(pk__in=request_pks).exists():
+                if not EasyImage.objects.filter(pk__in=item_pks).exists():
                     # Pass the BoundImg instance itself, mimicking old behavior
                     queued_img.send(sender=BoundImg, instance=bound_img)
 
         return bound_img
 
     def _ensure_loaded(self):
-        """Loads EasyImage data from DB for all requests in the batch."""
+        """Loads EasyImage data from DB for all items in the batch."""
         if self._is_loaded:
             return
 
@@ -400,9 +400,9 @@ class ImageBatch:
             missing_grouped: dict[tuple[str, str], list[UUID]] = {}
             pk_to_source_key: dict[UUID, tuple[str, str]] = {}
 
-            for req_id, req_data in self._requests.items():
-                source_key = (req_data["source_name"], req_data["storage_name"])
-                for pk in req_data.get("pk_to_options", {}):
+            for item_id, item_data in self._batch_items.items():
+                source_key = (item_data["source_name"], item_data["storage_name"])
+                for pk in item_data.get("pk_to_options", {}):
                     if pk in missing_pks:
                         pk_to_source_key[pk] = source_key
                         if source_key not in missing_grouped:
@@ -449,16 +449,16 @@ class ImageBatch:
         self._is_loaded = True
 
         # --- Handle Signals for Newly Created/Relevant Images ---
-        # Iterate through requests and check if any of their PKs were missing AND send_signal is True
+        # Iterate through items and check if any of their PKs were missing AND send_signal is True
         pks_needing_signal = set()
-        for req_id, req_data in self._requests.items():
-            if req_data.get("send_signal"):
-                request_pks = set(req_data.get("pk_to_options", {}).keys())
-                # Check if any of this request's PKs were among those we attempted to create
-                if request_pks.intersection(pks_that_were_missing):
-                    # Add all PKs for this request to the signal list? Or just the missing ones?
-                    # Let's add all PKs associated with the request that triggered the signal.
-                    pks_needing_signal.update(request_pks)
+        for item_id, item_data in self._batch_items.items():
+            if item_data.get("send_signal"):
+                item_pks = set(item_data.get("pk_to_options", {}).keys())
+                # Check if any of this item's PKs were among those we attempted to create
+                if item_pks.intersection(pks_that_were_missing):
+                    # Add all PKs for this item to the signal list? Or just the missing ones?
+                    # Let's add all PKs associated with the item that triggered the signal.
+                    pks_needing_signal.update(item_pks)
 
         if pks_needing_signal:
             # Send one signal with all relevant EasyImage instances?
@@ -490,9 +490,9 @@ class ImageBatch:
         self._ensure_loaded()
         return self._loaded_images.get(pk)
 
-    def build_images_for_request(self, request_id: int, build_choice: BuildChoices):
+    def build_images_for_item(self, item_id: int, build_choice: BuildChoices):
         """
-        Builds images for a specific request ID within the batch.
+        Builds images for a specific item ID within the batch.
         """
         # Local imports
         from . import engine
@@ -500,13 +500,13 @@ class ImageBatch:
 
         self._ensure_loaded()  # Make sure models are loaded/created
 
-        request_data = self._requests.get(request_id)
-        if not request_data:
-            print(f"Warning: Request ID {request_id} not found in batch.")
-            return  # Request not found
+        item_data = self._batch_items.get(item_id)
+        if not item_data:
+            print(f"Warning: Item ID {item_id} not found in batch.")
+            return  # Item not found
 
-        source_name = request_data["source_name"]
-        storage_name = request_data["storage_name"]
+        source_name = item_data["source_name"]
+        storage_name = item_data["storage_name"]
         source_key = (source_name, storage_name)
         source_file = self._source_files.get(source_key)
 
@@ -515,9 +515,9 @@ class ImageBatch:
             # TODO: Handle error - maybe try to open from storage?
             return
 
-        pk_to_options = request_data.get("pk_to_options", {})
-        base_pk = request_data.get("base_pk")
-        srcset_pks = request_data.get("srcset_pks", [])
+        pk_to_options = item_data.get("pk_to_options", {})
+        base_pk = item_data.get("base_pk")
+        srcset_pks = item_data.get("srcset_pks", [])
 
         build_targets_pks: list[UUID] = []
 
@@ -545,13 +545,13 @@ class ImageBatch:
                 pks_to_build_locally.add(pk)
 
         if not build_targets:
-            # print(f"No images to build for request {request_id} with choice '{build_choice}'")
-            return  # Nothing to build for this request/choice
+            # print(f"No images to build for item {item_id} with choice '{build_choice}'")
+            return  # Nothing to build for this item/choice
 
         # --- Perform Build (Adapted from old BoundImg._build_images) ---
         source_img: "engine.Image | None" = None
         try:
-            # Load the source image efficiently just once for all targets in this request
+            # Load the source image efficiently just once for all targets in this item
             source_img = engine.efficient_load(
                 file=source_file, options=[opts for _, opts in build_targets]
             )
@@ -594,7 +594,7 @@ class ImageBatch:
 
     def build(self):
         """
-        Execute all build requests in the batch efficiently.
+        Execute all build items in the batch efficiently.
 
         This method processes all images that were added with a build parameter,
         performing batch database operations first, then building each image
@@ -603,45 +603,45 @@ class ImageBatch:
         # Ensure all DB records are loaded/created efficiently in one batch operation
         self._ensure_loaded()
 
-        # Build images for each request that specified a build option
-        for request_id, request_data in self._requests.items():
-            build_choice = request_data.get("build")
+        # Build images for each item that specified a build option
+        for item_id, item_data in self._batch_items.items():
+            build_choice = item_data.get("build")
             if build_choice:  # Only build if build was specified during add()
-                self.build_images_for_request(request_id, build_choice)
+                self.build_images_for_item(item_id, build_choice)
 
 
 class BoundImg:
     """
-    Represents a single image request within a batch. Accessing properties
+    Represents a single image item within a batch. Accessing properties
     triggers the batch loading mechanism if not already loaded.
     """
 
     _parent_batch: "ImageBatch"
-    _request_id: int
+    _item_id: int
 
-    def __init__(self, parent_batch: "ImageBatch", request_id: int):
+    def __init__(self, parent_batch: "ImageBatch", item_id: int):
         self._parent_batch = parent_batch
-        self._request_id = request_id
+        self._item_id = item_id
 
     # Add more specific type hints using TypeVar or overload if needed,
     # but for now, basic Any helps Pylance a bit.
-    def _get_request_detail(self, key: str, default: Any = None) -> Any:
-        """Helper to get details for this specific request from the batch."""
-        request_data = self._parent_batch._requests.get(self._request_id, {})
-        return request_data.get(key, default)
+    def _get_item_detail(self, key: str, default: Any = None) -> Any:
+        """Helper to get details for this specific item from the batch."""
+        item_data = self._parent_batch._batch_items.get(self._item_id, {})
+        return item_data.get(key, default)
 
     def _ensure_batch_built(self):
         """Ensure this BoundImg has been built if it needs building."""
         # Always ensure DB records are loaded first
         self._parent_batch._ensure_loaded()
 
-        build_choice = self._get_request_detail("build")
+        build_choice = self._get_item_detail("build")
         if build_choice and not self.is_built:
-            self._parent_batch.build_images_for_request(self._request_id, build_choice)
+            self._parent_batch.build_images_for_item(self._item_id, build_choice)
 
     @property
     def is_built(self) -> bool:
-        """Check if the requested images have been built.
+        """Check if the item's images have been built.
 
         Returns True if the images specified by the build parameter have been
         successfully built and stored in the database.
@@ -649,19 +649,19 @@ class BoundImg:
         # Access underlying data without triggering auto-building to avoid recursion
         self._parent_batch._ensure_loaded()  # Just ensure DB records exist
 
-        build_choice = self._get_request_detail("build")
+        build_choice = self._get_item_detail("build")
         if not build_choice:
             return True  # No build requested, consider it "built"
 
         if build_choice == "src":
-            base_pk = self._get_request_detail("base_pk")
+            base_pk = self._get_item_detail("base_pk")
             if base_pk:
                 base_img = self._parent_batch.get_image(base_pk)
                 # Simply check if the image field is populated (not None/empty)
                 # This avoids file I/O and is sufficient for our needs
                 return bool(base_img and base_img.image)
         elif build_choice == "srcset":
-            srcset_pks = self._get_request_detail("srcset_pks", []) or []
+            srcset_pks = self._get_item_detail("srcset_pks", []) or []
             # Just check if any srcset images have been built
             for pk in srcset_pks:
                 thumb = self._parent_batch.get_image(pk)
@@ -670,8 +670,8 @@ class BoundImg:
             return False
         elif build_choice == "all":
             # Check if we have PKs to check
-            base_pk = self._get_request_detail("base_pk")
-            srcset_pks = self._get_request_detail("srcset_pks", []) or []
+            base_pk = self._get_item_detail("base_pk")
+            srcset_pks = self._get_item_detail("srcset_pks", []) or []
 
             # Check base if exists
             if base_pk:
@@ -691,12 +691,12 @@ class BoundImg:
     @property
     def alt(self) -> str:
         # Alt text is stored directly, no loading needed initially
-        return self._get_request_detail("alt", "")
+        return self._get_item_detail("alt", "")
 
     @property
     def base(self) -> "EasyImage | None":
         self._ensure_batch_built()  # Auto-build if needed
-        base_pk = self._get_request_detail("base_pk")
+        base_pk = self._get_item_detail("base_pk")
         if base_pk:
             # Use the batch's getter which handles the cache
             return self._parent_batch.get_image(base_pk)
@@ -707,9 +707,9 @@ class BoundImg:
         self._ensure_batch_built()  # Auto-build if needed
         srcset_items: list[SrcSetItem] = []
         # Provide a default empty list to satisfy type checker for iteration
-        srcset_pks = self._get_request_detail("srcset_pks", []) or []
+        srcset_pks = self._get_item_detail("srcset_pks", []) or []
         # Need original options used for each srcset item for correct HTML/info
-        srcset_pk_options = self._get_request_detail("srcset_pk_options", {})
+        srcset_pk_options = self._get_item_detail("srcset_pk_options", {})
 
         for pk in srcset_pks:
             # Use the batch's getter
@@ -729,7 +729,7 @@ class BoundImg:
     def sizes(self) -> str:
         # Sizes attribute string is calculated and stored during add()
         # Ensure a string is returned
-        return str(self._get_request_detail("sizes_attr", ""))
+        return str(self._get_item_detail("sizes_attr", ""))
 
     def as_html(self) -> str:
         """Generate the complete <img> tag HTML with srcset and sizes."""
@@ -794,8 +794,8 @@ class BoundImg:
 
         # Fallback: Try getting the URL from the original source file object
         try:
-            source_name = self._get_request_detail("source_name_fallback")
-            storage_name = self._get_request_detail("storage_name")
+            source_name = self._get_item_detail("source_name_fallback")
+            storage_name = self._get_item_detail("storage_name")
             if source_name and storage_name:
                 source_key = (source_name, storage_name)
                 original_file = self._parent_batch._source_files.get(source_key)
@@ -809,10 +809,10 @@ class BoundImg:
 
     def build(self, build_choice: BuildChoices = "all"):
         """
-        Triggers the build process for this specific image request within the batch.
+        Triggers the build process for this specific image item within the batch.
         """
-        # Delegate building to the parent batch, passing our request ID
-        self._parent_batch.build_images_for_request(self._request_id, build_choice)
+        # Delegate building to the parent batch, passing our item ID
+        self._parent_batch.build_images_for_item(self._item_id, build_choice)
 
     def __str__(self) -> str:
         """

@@ -366,8 +366,8 @@ class TestImageBatchOptimization:
             bound = img(file, build="src")
             url = bound.base_url()
 
-            # Each should have its own batch with only its own request
-            assert len(bound._parent_batch._requests) == 1
+            # Each should have its own batch with only its own item
+            assert len(bound._parent_batch._batch_items) == 1
             assert len(bound._parent_batch._all_pk_to_options) >= 1
 
             batch_sizes.append(len(bound._parent_batch._loaded_images))
@@ -380,7 +380,7 @@ class TestImageBatchOptimization:
 
     @pytest.mark.django_db
     def test_shared_batch_accumulation(self):
-        """Test that shared batches accumulate requests efficiently."""
+        """Test that shared batches accumulate items efficiently."""
         batch = ImageBatch()
         img = Img(batch=batch, width=100, format="jpg")
 
@@ -391,8 +391,8 @@ class TestImageBatchOptimization:
         for bound in bounds:
             assert bound._parent_batch is batch
 
-        # Batch should accumulate all requests
-        assert len(batch._requests) == 3
+        # Batch should accumulate all items
+        assert len(batch._batch_items) == 3
         assert len(batch._all_pk_to_options) >= 3
 
         # All should be accessible after batch build
@@ -416,7 +416,7 @@ class TestImageBatchEdgeCases:
         batch.build()  # Should not error
         assert batch._is_loaded
         assert len(batch._loaded_images) == 0
-        assert len(batch._requests) == 0
+        assert len(batch._batch_items) == 0
 
     @pytest.mark.django_db
     def test_duplicate_image_handling(self):
@@ -434,8 +434,8 @@ class TestImageBatchEdgeCases:
         bound1 = img(profile.image, build="src")
         bound2 = img(profile.image, build="src")  # Same file, same config
 
-        # Should have separate requests but potentially shared PKs
-        assert len(batch._requests) == 2
+        # Should have separate items but potentially shared PKs
+        assert len(batch._batch_items) == 2
 
         # URLs might be the same (same image, same processing)
         url1 = bound1.base_url()

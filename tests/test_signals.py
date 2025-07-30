@@ -113,7 +113,7 @@ def test_queue_with_build_srcset(profile_queue_img):
 
     # Find the base PK among the newly created ones
     bound_img = profile_queue_img(profile.image)  # Get BoundImg to access _base_pk
-    base_pk = bound_img._parent_batch._requests[bound_img._request_id]["base_pk"]
+    base_pk = bound_img._parent_batch._batch_items[bound_img._item_id]["base_pk"]
     assert base_pk in new_pks, "Base PK not found among newly created PKs"
 
     # Assert only the base image among the new ones is unbuilt

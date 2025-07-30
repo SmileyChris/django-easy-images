@@ -59,7 +59,7 @@ def test_as_html_loaded(mock_ensure_loaded, mock_get_image):
     dummy_base_pk = "00000000-0000-0000-0000-000000000001"
     dummy_srcset1_pk = "00000000-0000-0000-0000-000000000002"
     dummy_srcset2_pk = "00000000-0000-0000-0000-000000000003"
-    bound_img._parent_batch._requests[bound_img._request_id] = {
+    bound_img._parent_batch._batch_items[bound_img._item_id] = {
         "base_pk": dummy_base_pk,
         "srcset_pks": [dummy_srcset1_pk, dummy_srcset2_pk],
         "srcset_pk_options": {  # Need this for srcset generation in as_html
@@ -157,7 +157,7 @@ def test_sizes_loaded(mock_ensure_loaded, mock_get_image):
     dummy_size100_pk = "10000000-0000-0000-0000-000000000002"
     dummy_size200_pk = "10000000-0000-0000-0000-000000000003"  # Default size
     dummy_size400_pk = "10000000-0000-0000-0000-000000000004"  # High density
-    bound_img._parent_batch._requests[bound_img._request_id] = {
+    bound_img._parent_batch._batch_items[bound_img._item_id] = {
         "base_pk": dummy_base_pk,
         "srcset_pks": [dummy_size100_pk, dummy_size200_pk, dummy_size400_pk],
         "srcset_pk_options": {
