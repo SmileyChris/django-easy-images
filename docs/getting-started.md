@@ -34,7 +34,29 @@ thumb = Img(width="md")
 html = thumb(profile.photo, alt="Profile photo").as_html()
 ```
 
-If you're going to be building several images, consider using the [`ImageBatch`](api.md#imagebatch) class to process them in bulk.
+### Batch Processing for Multiple Images
+
+When working with multiple images, use `ImageBatch` for better performance:
+
+```python
+from easy_images import Img, ImageBatch
+
+# Create a batch for efficient processing
+batch = ImageBatch()
+thumb = Img(batch=batch, width="md")
+
+# Process multiple images
+images = []
+for profile in profiles:
+    bound_img = thumb(profile.photo, alt=f"{profile.name}'s photo")
+    images.append(bound_img)
+
+# First access loads all images in one query
+for img in images:
+    print(img.as_html())
+```
+
+See the [API documentation](api.md#imagebatch-batch-processing) for more details.
 
 ### Using template tags
 ```html

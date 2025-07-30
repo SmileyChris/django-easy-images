@@ -25,26 +25,55 @@ img.queue(MyModel)  # Processes all ImageFields on MyModel
 ```
 
 #### `ImageBatch` - Batch Processing
+
+The `ImageBatch` class optimizes database queries when processing multiple images:
+
 ```python
-from easy_images import ImageBatch
+from easy_images import ImageBatch, Img
 
+# Create a shared batch for efficient processing
 batch = ImageBatch()
-img1 = batch.add(source_file=model1.image_field, options={'width': 800})
-img2 = batch.add(source_file=model2.image_field, options={'width': 600})
 
-# Get HTML for all images
-html1 = img1.as_html()
-html2 = img2.as_html()
+# Create image configurations with the batch
+img = Img(batch=batch, width=800, format="webp")
+thumbnail = Img(batch=batch, width=200, format="jpg")
+
+# Add images to the batch
+bound1 = img(model1.image_field, alt="Main image")
+bound2 = thumbnail(model2.image_field, alt="Thumbnail")
+
+# Access images - batch loading happens automatically
+html1 = bound1.as_html()  # First access triggers batch loading
+html2 = bound2.as_html()  # Already loaded, no extra queries
+
+# Or explicitly build all images in the batch
+batch.build()
 ```
 
-#### `BoundImg` - Processed Image
-```python
-# Get image URLs
-main_url = processed_img.base_url()
-srcset = processed_img.srcset  # List of available sizes
+**Key benefits:**
+- Batches database queries for multiple images
+- Shares loaded image data across all items in the batch
+- Supports incremental loading when adding images to an already-loaded batch
+- Automatic lazy building when properties are accessed
 
-# Build images immediately (instead of queue)
-processed_img.build('all')  # Options: 'all', 'base', 'srcset'
+#### `BoundImg` - Processed Image
+
+A `BoundImg` represents a single image item within a batch:
+
+```python
+# Properties (trigger auto-building if needed)
+main_url = bound_img.base_url()           # URL of the base image
+srcset_items = bound_img.srcset          # List of SrcSetItem objects
+alt_text = bound_img.alt                  # Alt text
+sizes_attr = bound_img.sizes             # Sizes attribute for responsive images
+html = bound_img.as_html()               # Complete <img> tag
+
+# Check if images are built
+if bound_img.is_built:
+    print("Images are ready")
+
+# Manually trigger building
+bound_img.build('all')  # Options: 'all', 'src', 'srcset'
 ```
 
 ### `easy_images.engine`
