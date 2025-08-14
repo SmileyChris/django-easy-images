@@ -138,15 +138,14 @@ def _new_image(file: str | Path | File, access, **kwargs):
 
     path = None
     if isinstance(file, File):
-        if isinstance(file, FieldFile):
-            try:
+        try:
+            if isinstance(file, TemporaryUploadedFile):
+                path = file.temporary_file_path()
+            else:
                 path = file.path
-            except Exception:
-                pass
-        elif isinstance(file, TemporaryUploadedFile):
-            path = file.temporary_file_path()
-        if not path:
-            path = getattr(file, "path", None)
+        except Exception:
+            pass
+
         if not path:
             content = file.read()
             if file.seekable():
