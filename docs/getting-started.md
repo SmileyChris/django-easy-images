@@ -32,6 +32,9 @@ thumb = Img(width="md")
 
 # Generate HTML for an image
 html = thumb(profile.photo, alt="Profile photo").as_html()
+
+# Add extra attributes to the image
+html = thumb(profile.photo, alt="Profile photo").as_html(img_attrs={"loading": "lazy"})
 ```
 
 ### Batch Processing for Multiple Images

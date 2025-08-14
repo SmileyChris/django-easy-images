@@ -731,8 +731,11 @@ class BoundImg:
         # Ensure a string is returned
         return str(self._get_item_detail("sizes_attr", ""))
 
-    def as_html(self) -> str:
-        """Generate the complete <img> tag HTML with srcset and sizes."""
+    def as_html(self, img_attrs: dict[str, str] | None = None) -> str:
+        """Generate the complete <img> tag HTML with srcset and sizes.
+
+        :param img_attrs: Optional dict of additional attributes to add to the <img> tag.
+        """
         # Accessing properties triggers loading if needed
         base_img = self.base
         srcset_items = self.srcset
@@ -773,6 +776,13 @@ class BoundImg:
                 attrs.append(f'width="{base_img.width}"')
             if base_img.height is not None:
                 attrs.append(f'height="{base_img.height}"')
+
+        # Add any extra attributes from img_attrs
+        if img_attrs:
+            for k, v in img_attrs.items():
+                # Avoid overwriting existing attributes
+                if k and v and not any(attr.startswith(f"{k}=") for attr in attrs):
+                    attrs.append(f'{escape(k)}="{escape(v)}"')
 
         # Filter out potential empty strings if base image failed etc.
         attrs = [attr for attr in attrs if attr]
