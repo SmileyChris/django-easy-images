@@ -1,11 +1,9 @@
 import tempfile
 from pathlib import Path
 
-from django.core.files.uploadedfile import (
-    SimpleUploadedFile,
-)
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-from easy_images.engine import efficient_load, scale_image
+from easy_images.engine import _new_image, efficient_load, scale_image
 from easy_images.options import ParsedOptions
 from pyvips import Image
 
@@ -68,3 +66,35 @@ def test_scale():
 
     scaled_not_upscale = scale_image(small_src, (400, 500), contain=True)
     assert (scaled_not_upscale.width, scaled_not_upscale.height) == (100, 100)
+
+
+def test_new_image_file_handling():
+    """Test the file read for different File backends."""
+
+    # Create a simple test image to work with
+    image = Image.black(100, 100)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        image_path = Path(tmpdir) / "test.jpg"
+        image.write_to_file(str(image_path))
+
+        # Test with a path string - should work
+        result = _new_image(str(image_path), "sequential")
+        assert result is not None
+        assert result.width == 100
+        assert result.height == 100
+
+        # Test with a Path object - should also work
+        result2 = _new_image(image_path, "sequential")
+        assert result2 is not None
+        assert result2.width == 100
+        assert result2.height == 100
+
+        # Test with SimpleUploadedFile (uses read/buffer path)
+        with open(image_path, "rb") as f:
+            content = f.read()
+        simple_file = SimpleUploadedFile("test.jpg", content, content_type="image/jpeg")
+
+        result3 = _new_image(simple_file, "sequential")
+        assert result3 is not None
+        assert result3.width == 100
+        assert result3.height == 100

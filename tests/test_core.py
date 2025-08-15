@@ -201,3 +201,34 @@ def test_sizes_loaded(mock_ensure_loaded, mock_get_image):
     assert "/img/size_400.webp 400w" in html_output  # High density based on max width
     assert 'width="200"' in html_output
     assert 'height="112"' in html_output
+
+
+@pytest.mark.django_db
+@patch("easy_images.models.get_storage_name", return_value="default")
+def test_as_html_with_img_attrs(mock_get_storage):
+    """Test that as_html correctly adds custom img attributes."""
+    # Create mock storage and assign URL
+    mock_storage = Mock()
+    mock_storage.url.return_value = "/test.jpg"
+    
+    generator = Img(width=100)
+    source = FieldFile(instance=EasyImage(), field=FileField(), name="test.jpg")
+    source.storage = mock_storage  # Assign mock storage to instance
+    
+    bound_img = generator(source, alt="Test image")
+    
+    # Test with custom img_attrs
+    html = bound_img.as_html(img_attrs={"loading": "lazy", "class": "rounded", "data-id": "123"})
+    
+    assert 'src="/test.jpg"' in html
+    assert 'alt="Test image"' in html
+    assert 'loading="lazy"' in html
+    assert 'class="rounded"' in html
+    assert 'data-id="123"' in html
+    
+    # Test that existing attributes are not overwritten
+    html2 = bound_img.as_html(img_attrs={"alt": "Should not override", "src": "should-not-override.jpg"})
+    assert 'alt="Test image"' in html2  # Original alt should remain
+    assert 'src="/test.jpg"' in html2  # Original src should remain
+    assert 'alt="Should not override"' not in html2
+    assert 'src="should-not-override.jpg"' not in html2
