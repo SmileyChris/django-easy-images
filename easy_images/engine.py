@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 from django.core.files import File
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
-from django.db.models.fields.files import FieldFile
 
 from easy_images.core import ParsedOptions
 
@@ -142,7 +141,7 @@ def _new_image(file: str | Path | File, access, **kwargs):
             if isinstance(file, TemporaryUploadedFile):
                 path = file.temporary_file_path()
             else:
-                path = file.path
+                path = file.path  # type: ignore
         except Exception:
             pass
 
