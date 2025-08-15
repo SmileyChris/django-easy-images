@@ -102,4 +102,12 @@ Template tags for rendering processed images:
 
 <!-- With responsive sizes -->
 {% easy_image obj.image_field width=1200 sizes="(max-width: 768px) 600px, (max-width: 480px) 400px" %}
+
+<!-- With additional HTML attributes using img_ prefix -->
+{% img obj.image_field width="md" alt="Product" img_class="rounded-lg" img_loading="lazy" img_data_id="123" %}
 ```
+
+The template tag supports adding custom HTML attributes to the generated `<img>` element by prefixing them with `img_`. For example:
+- `img_class="my-class"` becomes `class="my-class"`
+- `img_loading="lazy"` becomes `loading="lazy"`
+- `img_data_id="123"` becomes `data-id="123"`
