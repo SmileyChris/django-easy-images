@@ -7,6 +7,8 @@ To roll a release, make sure you have your PyPI credentials in your keyring and 
 Tag the current release and push it:
 
 ```bash
+git pull
+git --no-pager tag --list "v*"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push --tags
 ```
