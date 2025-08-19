@@ -44,6 +44,21 @@ Image compression quality (default: 80)
 Img(quality=90)  # Higher quality
 ```
 
+### `contain`
+When resizing the image (and not cropping), contain the image within the requested ratio. This ensures it will always fit within the requested dimensions and prevents upscaling.
+
+**⚠️ Default values differ by usage:**
+- **Python API (`Img()`):** `True` (default) - Image is contained within dimensions, no upscaling
+- **Template tag (`{% img %}`):** `False` (default) - Image covers the requested ratio (may exceed dimensions)
+
+```python
+# Python API
+Img(contain=False)  # Override to allow image to cover/exceed dimensions
+
+# Template tag
+{% img file my_img contain=True %}  # Override to contain within dimensions
+```
+
 ## Advanced Options
 
 ### `sizes`

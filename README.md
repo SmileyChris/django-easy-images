@@ -203,7 +203,11 @@ This is useful when you want to handle positioning in CSS using `object-fit`.
 
 When resizing the image (and not cropping), contain the image within the requested ratio. This ensures it will always fit within the requested dimensions. It also stops the image from being upscaled.
 
-The default is `False`, meaning the image will be resized down to cover the requested ratio (which means the image dimensions may be larger than the requested dimensions).
+**⚠️ Important:** The default value differs between usage methods:
+- **Python API (`Img()` class):** Defaults to `True` - images are contained within dimensions
+- **Template tag (`{% img %}`):** Defaults to `False` - images cover the requested ratio
+
+This difference exists for backwards compatibility. When using the template tag, you may want to explicitly set `contain=True` if you want to prevent upscaling.
 
 #### `focal_window`
 
