@@ -105,18 +105,75 @@ python manage.py easy_images requeue
 #### Subcommands
 
 ##### `status` (default)
-Shows queue statistics and current state:
+Shows queue statistics and current state. Supports multiple output formats and health gates:
 
 ```bash
+# Auto format: pretty on TTY, plain otherwise
 python manage.py easy_images status
-python manage.py easy_images status --verbose  # Show error distribution
+
+# Explicit formats
+python manage.py easy_images status --format pretty
+python manage.py easy_images status --format plain
+python manage.py easy_images status --format json
+
+# Options
+python manage.py easy_images status --stale-after 600   # Stale BUILDING threshold (seconds)
+python manage.py easy_images status --verbose           # Show error distribution
+python manage.py easy_images status --fail-on-stale     # Exit non-zero if stale builds exist
+python manage.py easy_images status --fail-on-errors 5  # Exit non-zero if errors > 5
 ```
 
-Output includes:
-- Total images in queue
-- Breakdown by status (queued, building, errors)
-- Detection of stale builds
-- Error count distribution (with --verbose)
+Plain/pretty output includes:
+- Total source images (distinct storage+name)
+- Total generated images
+- Total images in queue (unbuilt: queued+building+errors)
+- Average generated per source
+- Breakdown by status (queued, building with stale count, errors split by type)
+- Error count distribution (with `--verbose`)
+- Suggestions (commands to remediate)
+
+Example (pretty):
+
+```
+Summary: 7 sources | 3 generated (0.43/src) | 5 queued | 2 building (1 stale) | 2 errors (S:1 B:1)
+
+Totals:
+  Total source images: 7
+  Total generated images: 3
+  Total images in queue: 5
+  Avg generated per source: 0.43
+
+Breakdown:
+  Queued:   5 █████
+  Building: 2 ██ (1 stale > 600s)
+  Errors:   2 ██ (source: 1, build: 1)
+
+Suggestions:
+  python manage.py easy_images build --stale-after 600
+  python manage.py easy_images requeue --max-errors 3
+```
+
+JSON schema:
+
+```json
+{
+  "counts": {
+    "sources": 7,
+    "generated": 3,
+    "queued": 5,
+    "building": 2,
+    "source_errors": 1,
+    "build_errors": 1
+  },
+  "avg_per_source": 0.43,
+  "stale": { "threshold_seconds": 600, "count": 1 },
+  "error_dist": [{ "error_count": 1, "count": 2 }],
+  "suggestions": [
+    "python manage.py easy_images build --stale-after 600",
+    "python manage.py easy_images requeue --max-errors 3"
+  ]
+}
+```
 
 ##### `build`
 Processes queued images with intelligent stale detection:
@@ -184,8 +241,14 @@ The command automatically handles crashed or stuck builds by checking the `statu
 
 3. **Monitoring Script**:
    ```bash
-   # Get detailed status for monitoring
-   python manage.py easy_images status --verbose
+   # Pretty output for humans (TTY)
+   python manage.py easy_images status --stale-after 600 --verbose
+
+   # JSON for machines
+   python manage.py easy_images status --format json --stale-after 600
+
+   # Fail CI/monitoring if stale builds or too many errors
+   python manage.py easy_images status --fail-on-stale --fail-on-errors 0
    ```
 
 ### `build_img_queue` (Deprecated)
