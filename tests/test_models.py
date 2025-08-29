@@ -10,6 +10,13 @@ from easy_images.models import (
     get_storage_name,
     pick_image_storage,
 )
+import pytest
+pytestmark = pytest.mark.vips
+import pytest as _pytest_vips_guard
+try:
+    import pyvips  # noqa: F401
+except Exception:
+    _pytest_vips_guard.skip("pyvips/libvips not available", allow_module_level=True)
 from pyvips.vimage import Image
 from tests.easy_images_tests.models import Profile
 

@@ -2,6 +2,11 @@ from io import StringIO
 from unittest import mock
 
 import pytest
+pytestmark = pytest.mark.vips
+try:
+    import pyvips  # noqa: F401
+except Exception:
+    pytest.skip("pyvips/libvips not available", allow_module_level=True)
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.core.management import call_command
@@ -15,7 +20,8 @@ from pyvips import Image
 @pytest.mark.django_db
 def test_empty():
     test_output = StringIO()
-    call_command("build_img_queue", stdout=test_output)
+    with pytest.warns(DeprecationWarning):
+        call_command("build_img_queue", stdout=test_output)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
 No <img> thumbnails required building
@@ -41,7 +47,8 @@ def test_queue():
     EasyImage.objects.create(args={}, name="2")
     test_output = StringIO()
     with mock.patch("easy_images.models.EasyImage.build", return_value=True):
-        call_command("build_img_queue", stdout=test_output)
+        with pytest.warns(DeprecationWarning):
+            call_command("build_img_queue", stdout=test_output)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
 Skipping 1 marked as already building...
@@ -73,7 +80,8 @@ def test_retry():
         )
     test_output = StringIO()
     with mock.patch("easy_images.models.EasyImage.build", return_value=True):
-        call_command("build_img_queue", stdout=test_output, retry=1)
+        with pytest.warns(DeprecationWarning):
+            call_command("build_img_queue", stdout=test_output, retry=1)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
 Skipping 1 marked as already building...
@@ -101,7 +109,8 @@ def test_force():
         )
     test_output = StringIO()
     with mock.patch("easy_images.models.EasyImage.build", return_value=True):
-        call_command("build_img_queue", stdout=test_output, force=True)
+        with pytest.warns(DeprecationWarning):
+            call_command("build_img_queue", stdout=test_output, force=True)
     assert test_output.getvalue() == (
         """Building queued <img> thumbnails...
 Built 4 <img> thumbnails

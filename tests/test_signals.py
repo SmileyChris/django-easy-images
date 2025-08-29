@@ -3,6 +3,11 @@ from typing import Iterator
 from unittest.mock import MagicMock
 
 import pytest
+pytestmark = pytest.mark.vips
+try:
+    import pyvips  # noqa: F401
+except Exception:
+    pytest.skip("pyvips/libvips not available", allow_module_level=True)
 from django.core.files.uploadedfile import SimpleUploadedFile
 from pytest import FixtureRequest  # Import from public API
 

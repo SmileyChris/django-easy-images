@@ -6,6 +6,11 @@ and memory management improvements.
 """
 
 import pytest
+pytestmark = pytest.mark.vips
+try:
+    import pyvips  # noqa: F401
+except Exception:
+    pytest.skip("pyvips/libvips not available", allow_module_level=True)
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import pyvips

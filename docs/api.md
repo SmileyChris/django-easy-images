@@ -84,11 +84,126 @@ Database models for storing image information
 
 ## Management Commands
 
-### `build_img_queue`
-Processes pending images in the queue:
+### `easy_images`
+
+Manages the EasyImage queue with subcommands for building, requeuing, and checking status. This is the primary command for managing image processing.
+
+#### Basic Usage
+
 ```bash
-python manage.py build_img_queue
+# Show queue status (default action)
+python manage.py easy_images
+python manage.py easy_images status
+
+# Build queued images
+python manage.py easy_images build
+
+# Requeue failed images
+python manage.py easy_images requeue
 ```
+
+#### Subcommands
+
+##### `status` (default)
+Shows queue statistics and current state:
+
+```bash
+python manage.py easy_images status
+python manage.py easy_images status --verbose  # Show error distribution
+```
+
+Output includes:
+- Total images in queue
+- Breakdown by status (queued, building, errors)
+- Detection of stale builds
+- Error count distribution (with --verbose)
+
+##### `build`
+Processes queued images with intelligent stale detection:
+
+```bash
+python manage.py easy_images build
+python manage.py easy_images build --stale-after 300      # Stale if BUILDING > 5 minutes
+python manage.py easy_images build --max-errors 3         # Skip images with > 3 errors
+python manage.py easy_images build --verbose              # Show detailed progress
+```
+
+Options:
+- `--stale-after <seconds>` - Images stuck in BUILDING status longer than this are considered stale and reprocessed (default: 600 seconds)
+- `--max-errors <count>` - Only retry images with at most this many previous errors
+- `--verbose` - Show detailed progress and error information
+
+##### `requeue`
+Resets failed images back to QUEUED status for reprocessing:
+
+```bash
+python manage.py easy_images requeue
+python manage.py easy_images requeue --max-errors 5       # Only if ≤ 5 errors
+python manage.py easy_images requeue --include-stale      # Also requeue stale builds
+```
+
+Options:
+- `--max-errors <count>` - Only requeue images with at most this many errors
+- `--include-stale` - Also requeue images stuck in BUILDING status
+- `--stale-after <seconds>` - With --include-stale, defines stale threshold (default: 600)
+
+#### Image Processing States
+
+- **Queued** - New images waiting to be processed
+- **Building** - Images currently being processed (auto-detected as stale if too old)
+- **Built** - Successfully processed images
+- **Source Error** - Source file couldn't be accessed
+- **Build Error** - Failed during processing
+
+#### Smart Stale Detection
+
+The command automatically handles crashed or stuck builds by checking the `status_changed_date`:
+- Images in BUILDING status with recent timestamps are skipped (actually building)
+- Images in BUILDING status with old timestamps are treated as stale and reprocessed
+- No need for manual `--force` flag in most cases
+
+#### Integration Examples
+
+1. **Cron Job** - Regular processing with automatic stale handling:
+   ```bash
+   # Process queue every 5 minutes
+   */5 * * * * /path/to/python /path/to/manage.py easy_images build
+   ```
+
+2. **Error Recovery Workflow**:
+   ```bash
+   # Check current status
+   python manage.py easy_images
+   
+   # Requeue failed images with < 3 errors
+   python manage.py easy_images requeue --max-errors 3
+   
+   # Process the requeued images
+   python manage.py easy_images build
+   ```
+
+3. **Monitoring Script**:
+   ```bash
+   # Get detailed status for monitoring
+   python manage.py easy_images status --verbose
+   ```
+
+### `build_img_queue` (Deprecated)
+
+**⚠️ Deprecated:** This command is maintained for backwards compatibility. Please use `easy_images build` instead.
+
+```bash
+# Old command (deprecated)
+python manage.py build_img_queue --retry 3
+
+# New equivalent
+python manage.py easy_images build --max-errors 3
+```
+
+The old command will continue to work but displays a deprecation warning. It maps to the new command with these defaults:
+- `--retry` → `--max-errors`
+- Stale detection enabled with 600 second threshold
+- All other behavior remains the same
 
 ## Template Tags
 

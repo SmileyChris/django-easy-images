@@ -5,6 +5,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from easy_images.engine import _new_image, efficient_load, scale_image
 from easy_images.options import ParsedOptions
+import pytest
+pytestmark = pytest.mark.vips
+try:
+    import pyvips  # noqa: F401
+except Exception:
+    pytest.skip("pyvips/libvips not available", allow_module_level=True)
 from pyvips import Image
 
 

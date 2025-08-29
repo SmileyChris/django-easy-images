@@ -1,3 +1,5 @@
+import warnings
+
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 
@@ -6,7 +8,7 @@ from easy_images.models import EasyImage, ImageStatus
 
 
 class Command(BaseCommand):
-    help = "Process EasyImages that need to be built"
+    help = "Process EasyImages that need to be built (DEPRECATED: use 'easy_images build' instead)"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -26,6 +28,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *, verbosity, retry=None, force=None, count_only=False, **options):
+        # Show deprecation warning
+        warnings.warn(
+            "The 'build_img_queue' command is deprecated. "
+            "Please use 'python manage.py easy_images build' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         if count_only:
             count = EasyImage.objects.filter(image="").count()
             self.stdout.write(f"{count} <img> thumbnails need building")
@@ -101,7 +111,13 @@ class Command(BaseCommand):
                     )
         if verbosity:
             self.stdout.flush()
-        built = process_queue(force=bool(force), retry=retry, verbose=verbosity > 1)
+        # Map old parameters to new ones
+        built = process_queue(
+            force=bool(force), 
+            retry=retry,  # Will be mapped to max_errors in process_queue
+            verbose=verbosity > 1,
+            stale_after_seconds=600  # Default 10 minutes for backwards compatibility
+        )
         if built is None:
             if verbosity:
                 self.stdout.write("No <img> thumbnails required building")
