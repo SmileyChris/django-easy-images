@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>API Reference - Django Easy Images</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Django Easy Images</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../getting-started/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../configuration/" class="nav-link">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../advanced-usage/" class="nav-link">Advanced Usage</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">API Reference</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../advanced-usage/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#api-reference" class="nav-link">API Reference</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#core-modules" class="nav-link">Core Modules</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#management-commands" class="nav-link">Management Commands</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#template-tags" class="nav-link">Template Tags</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="api-reference">API Reference</h1>
+<h2 id="core-modules">Core Modules</h2>
+<h3 id="easy_imagescore"><code>easy_images.core</code></h3>
+<p>Main functionality for image processing with these key classes:</p>
+<h4 id="img-image-configuration"><code>Img</code> - Image Configuration</h4>
+<pre class="codehilite"><code class="language-python">from easy_images import Img
+
+# Basic usage
+img = Img(width=800, format='webp', quality=85)
+processed_img = img(my_model.image_field)
+
+# Chaining configurations
+responsive_img = (
+    Img(width=1200)
+    .extend(width=800, sizes={'768': 600, '480': 400})
+)
+
+# Automatic processing on model save
+img.queue(MyModel)  # Processes all ImageFields on MyModel
+</code></pre>
+
+<h4 id="imagebatch-batch-processing"><code>ImageBatch</code> - Batch Processing</h4>
+<p>The <code>ImageBatch</code> class optimizes database queries when processing multiple images:</p>
+<pre class="codehilite"><code class="language-python">from easy_images import ImageBatch, Img
+
+# Create a shared batch for efficient processing
+batch = ImageBatch()
+
+# Create image configurations with the batch
+img = Img(batch=batch, width=800, format=&quot;webp&quot;)
+thumbnail = Img(batch=batch, width=200, format=&quot;jpg&quot;)
+
+# Add images to the batch
+bound1 = img(model1.image_field, alt=&quot;Main image&quot;)
+bound2 = thumbnail(model2.image_field, alt=&quot;Thumbnail&quot;)
+
+# Access images - batch loading happens automatically
+html1 = bound1.as_html()  # First access triggers batch loading
+html2 = bound2.as_html()  # Already loaded, no extra queries
+
+# Or explicitly build all images in the batch
+batch.build()
+</code></pre>
+
+<p><strong>Key benefits:</strong>
+- Batches database queries for multiple images
+- Shares loaded image data across all items in the batch
+- Supports incremental loading when adding images to an already-loaded batch
+- Automatic lazy building when properties are accessed</p>
+<h4 id="boundimg-processed-image"><code>BoundImg</code> - Processed Image</h4>
+<p>A <code>BoundImg</code> represents a single image item within a batch:</p>
+<pre class="codehilite"><code class="language-python"># Properties (trigger auto-building if needed)
+main_url = bound_img.base_url()           # URL of the base image
+srcset_items = bound_img.srcset          # List of SrcSetItem objects
+alt_text = bound_img.alt                  # Alt text
+sizes_attr = bound_img.sizes             # Sizes attribute for responsive images
+html = bound_img.as_html()               # Complete &lt;img&gt; tag
+
+# Check if images are built
+if bound_img.is_built:
+    print(&quot;Images are ready&quot;)
+
+# Manually trigger building
+bound_img.build('all')  # Options: 'all', 'src', 'srcset'
+</code></pre>
+
+<h3 id="easy_imagesengine"><code>easy_images.engine</code></h3>
+<p>Image processing engine implementation</p>
+<h3 id="easy_imagesmodels"><code>easy_images.models</code></h3>
+<p>Database models for storing image information</p>
+<h2 id="management-commands">Management Commands</h2>
+<h3 id="easy_images"><code>easy_images</code></h3>
+<p>Manages the EasyImage queue with subcommands for building, requeuing, and checking status. This is the primary command for managing image processing.</p>
+<h4 id="basic-usage">Basic Usage</h4>
+<pre class="codehilite"><code class="language-bash"># Show queue status (default action)
+python manage.py easy_images
+python manage.py easy_images status
+
+# Build queued images
+python manage.py easy_images build
+
+# Requeue failed images
+python manage.py easy_images requeue
+</code></pre>
+
+<h4 id="subcommands">Subcommands</h4>
+<h5 id="status-default"><code>status</code> (default)</h5>
+<p>Shows queue statistics and current state. Supports multiple output formats and health gates:</p>
+<pre class="codehilite"><code class="language-bash"># Auto format: pretty on TTY, plain otherwise
+python manage.py easy_images status
+
+# Explicit formats
+python manage.py easy_images status --format pretty
+python manage.py easy_images status --format plain
+python manage.py easy_images status --format json
+
+# Options
+python manage.py easy_images status --stale-after 600   # Stale BUILDING threshold (seconds)
+python manage.py easy_images status --verbose           # Show error distribution
+python manage.py easy_images status --fail-on-stale     # Exit non-zero if stale builds exist
+python manage.py easy_images status --fail-on-errors 5  # Exit non-zero if errors &gt; 5
+</code></pre>
+
+<p>Plain/pretty output includes:
+- Total source images (distinct storage+name)
+- Total generated images
+- Total images in queue (unbuilt: queued+building+errors)
+- Average generated per source
+- Breakdown by status (queued, building with stale count, errors split by type)
+- Error count distribution (with <code>--verbose</code>)
+- Suggestions (commands to remediate)</p>
+<p>Example (pretty):</p>
+<pre class="codehilite"><code>Summary: 7 sources | 3 generated (0.43/src) | 5 queued | 2 building (1 stale) | 2 errors (S:1 B:1)
+
+Totals:
+  Total source images: 7
+  Total generated images: 3
+  Total images in queue: 5
+  Avg generated per source: 0.43
+
+Breakdown:
+  Queued:   5 █████
+  Building: 2 ██ (1 stale &gt; 600s)
+  Errors:   2 ██ (source: 1, build: 1)
+
+Suggestions:
+  python manage.py easy_images build --stale-after 600
+  python manage.py easy_images requeue --max-errors 3
+</code></pre>
+
+<p>JSON schema:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;counts&quot;: {
+    &quot;sources&quot;: 7,
+    &quot;generated&quot;: 3,
+    &quot;queued&quot;: 5,
+    &quot;building&quot;: 2,
+    &quot;source_errors&quot;: 1,
+    &quot;build_errors&quot;: 1
+  },
+  &quot;avg_per_source&quot;: 0.43,
+  &quot;stale&quot;: { &quot;threshold_seconds&quot;: 600, &quot;count&quot;: 1 },
+  &quot;error_dist&quot;: [{ &quot;error_count&quot;: 1, &quot;count&quot;: 2 }],
+  &quot;suggestions&quot;: [
+    &quot;python manage.py easy_images build --stale-after 600&quot;,
+    &quot;python manage.py easy_images requeue --max-errors 3&quot;
+  ]
+}
+</code></pre>
+
+<h5 id="build"><code>build</code></h5>
+<p>Processes queued images with intelligent stale detection:</p>
+<pre class="codehilite"><code class="language-bash">python manage.py easy_images build
+python manage.py easy_images build --stale-after 300      # Stale if BUILDING &gt; 5 minutes
+python manage.py easy_images build --max-errors 3         # Skip images with &gt; 3 errors
+python manage.py easy_images build --verbose              # Show detailed progress
+</code></pre>
+
+<p>Options:
+- <code>--stale-after &lt;seconds&gt;</code> - Images stuck in BUILDING status longer than this are considered stale and reprocessed (default: 600 seconds)
+- <code>--max-errors &lt;count&gt;</code> - Only retry images with at most this many previous errors
+- <code>--verbose</code> - Show detailed progress and error information</p>
+<h5 id="requeue"><code>requeue</code></h5>
+<p>Resets failed images back to QUEUED status for reprocessing:</p>
+<pre class="codehilite"><code class="language-bash">python manage.py easy_images requeue
+python manage.py easy_images requeue --max-errors 5       # Only if ≤ 5 errors
+python manage.py easy_images requeue --include-stale      # Also requeue stale builds
+</code></pre>
+
+<p>Options:
+- <code>--max-errors &lt;count&gt;</code> - Only requeue images with at most this many errors
+- <code>--include-stale</code> - Also requeue images stuck in BUILDING status
+- <code>--stale-after &lt;seconds&gt;</code> - With --include-stale, defines stale threshold (default: 600)</p>
+<h4 id="image-processing-states">Image Processing States</h4>
+<ul>
+<li><strong>Queued</strong> - New images waiting to be processed</li>
+<li><strong>Building</strong> - Images currently being processed (auto-detected as stale if too old)</li>
+<li><strong>Built</strong> - Successfully processed images</li>
+<li><strong>Source Error</strong> - Source file couldn't be accessed</li>
+<li><strong>Build Error</strong> - Failed during processing</li>
+</ul>
+<h4 id="smart-stale-detection">Smart Stale Detection</h4>
+<p>The command automatically handles crashed or stuck builds by checking the <code>status_changed_date</code>:
+- Images in BUILDING status with recent timestamps are skipped (actually building)
+- Images in BUILDING status with old timestamps are treated as stale and reprocessed
+- No need for manual <code>--force</code> flag in most cases</p>
+<h4 id="integration-examples">Integration Examples</h4>
+<ol>
+<li>
+<p><strong>Cron Job</strong> - Regular processing with automatic stale handling:
+   <code>bash
+   # Process queue every 5 minutes
+   */5 * * * * /path/to/python /path/to/manage.py easy_images build</code></p>
+</li>
+<li>
+<p><strong>Error Recovery Workflow</strong>:
+   ```bash
+   # Check current status
+   python manage.py easy_images</p>
+</li>
+</ol>
+<p># Requeue failed images with &lt; 3 errors
+   python manage.py easy_images requeue --max-errors 3</p>
+<p># Process the requeued images
+   python manage.py easy_images build
+   ```</p>
+<ol>
+<li><strong>Monitoring Script</strong>:
+   ```bash
+   # Pretty output for humans (TTY)
+   python manage.py easy_images status --stale-after 600 --verbose</li>
+</ol>
+<p># JSON for machines
+   python manage.py easy_images status --format json --stale-after 600</p>
+<p># Fail CI/monitoring if stale builds or too many errors
+   python manage.py easy_images status --fail-on-stale --fail-on-errors 0
+   ```</p>
+<h3 id="build_img_queue-deprecated"><code>build_img_queue</code> (Deprecated)</h3>
+<p><strong>⚠️ Deprecated:</strong> This command is maintained for backwards compatibility. Please use <code>easy_images build</code> instead.</p>
+<pre class="codehilite"><code class="language-bash"># Old command (deprecated)
+python manage.py build_img_queue --retry 3
+
+# New equivalent
+python manage.py easy_images build --max-errors 3
+</code></pre>
+
+<p>The old command will continue to work but displays a deprecation warning. It maps to the new command with these defaults:
+- <code>--retry</code> → <code>--max-errors</code>
+- Stale detection enabled with 600 second threshold
+- All other behavior remains the same</p>
+<h2 id="template-tags">Template Tags</h2>
+<h3 id="easy_images_1"><code>easy_images</code></h3>
+<p>Template tags for rendering processed images:</p>
+<pre class="codehilite"><code class="language-html">{% load easy_images %}
+
+&lt;!-- Basic usage --&gt;
+{% easy_image obj.image_field width=800 %}
+
+&lt;!-- With responsive sizes --&gt;
+{% easy_image obj.image_field width=1200 sizes=&quot;(max-width: 768px) 600px, (max-width: 480px) 400px&quot; %}
+
+&lt;!-- With additional HTML attributes using img_ prefix --&gt;
+{% img obj.image_field width=&quot;md&quot; alt=&quot;Product&quot; img_class=&quot;rounded-lg&quot; img_loading=&quot;lazy&quot; img_data_id=&quot;123&quot; %}
+</code></pre>
+
+<p>The template tag supports adding custom HTML attributes to the generated <code>&lt;img&gt;</code> element by prefixing them with <code>img_</code>. For example:
+- <code>img_class="my-class"</code> becomes <code>class="my-class"</code>
+- <code>img_loading="lazy"</code> becomes <code>loading="lazy"</code>
+- <code>img_data_id="123"</code> becomes <code>data-id="123"</code></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
